@@ -3,6 +3,7 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from pydantic import ValidationError
 from app.core.matching import MatchRequest, match_sites
+from app.core.nasa_data import DataUnavailable
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ async def live_matches(ws: WebSocket):
                 req = MatchRequest.model_validate(message.get('parameters', {}))
                 result = await asyncio.to_thread(match_sites, req)
                 await ws.send_json({'type': 'match_result', 'revision': revision, 'result': result})
-            except (ValueError, ValidationError, HTTPException) as exc:
+            except (ValueError, ValidationError, HTTPException, DataUnavailable) as exc:
                 await ws.send_json({'type': 'error', 'revision': revision, 'message': str(exc)})
     except WebSocketDisconnect:
         pass

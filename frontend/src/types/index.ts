@@ -11,8 +11,11 @@ export interface LandingSite {
   lat_deg: number;
   lon_deg: number;
   elevation_m: number;
+  grid_slope_deg?: number;
+  source_url?: string;
+  provenance?: string;
   description: string;
-  psr_distance_km: number;
+  psr_distance_km: number | null;
   scientific_significance: string;
   annual_data: Record<string, SiteAnnualData>;
 }

@@ -14,17 +14,17 @@ client = TestClient(app)
 
 def test_realtime_simulation_session():
     session = RealtimeSimulationSession(
-        site_ids=["shackleton-connecting-ridge", "malapert-mountain"],
+        site_ids=["lola-sp-001", "lola-sp-002"],
         start_unix=1735689600.0,
         mast_height_m=2.0,
         speed_multiplier=60.0
     )
     frame0 = session.compute_frame(dt_seconds=1.0)
     assert frame0["type"] == "telemetry_frame"
-    assert "shackleton-connecting-ridge" in frame0["sites"]
-    assert "malapert-mountain" in frame0["sites"]
+    assert "lola-sp-001" in frame0["sites"]
+    assert "lola-sp-002" in frame0["sites"]
 
-    s1 = frame0["sites"]["shackleton-connecting-ridge"]
+    s1 = frame0["sites"]["lola-sp-001"]
     assert "sun" in s1
     assert "earth" in s1
     assert "regime" in s1
@@ -38,7 +38,7 @@ def test_realtime_simulation_session():
 
 def test_landing_dispersion():
     res = evaluate_landing_dispersion(
-        site_id="shackleton-connecting-ridge",
+        site_id="lola-sp-001",
         start_unix=1735689600.0,
         end_unix=1735689600.0 + (3 * 86400.0),
         semi_major_m=200.0,
@@ -54,7 +54,7 @@ def test_landing_dispersion():
 
 def test_mast_sensitivity_sweep():
     res = evaluate_mast_sensitivity(
-        site_id="malapert-mountain",
+        site_id="lola-sp-002",
         start_unix=1735689600.0,
         end_unix=1735689600.0 + (3 * 86400.0),
         mast_heights=[1.0, 5.0, 10.0]
@@ -66,7 +66,7 @@ def test_mast_sensitivity_sweep():
 
 def test_dispersion_api_endpoint():
     payload = {
-        "site_id": "malapert-mountain",
+        "site_id": "lola-sp-002",
         "start_time_iso": "2027-01-01T00:00:00Z",
         "end_time_iso": "2027-01-04T00:00:00Z",
         "semi_major_m": 150.0,
@@ -77,12 +77,12 @@ def test_dispersion_api_endpoint():
     assert res.status_code == 200
     data = res.json()
     assert "envelope" in data
-    assert data["site_id"] == "malapert-mountain"
+    assert data["site_id"] == "lola-sp-002"
 
 
 def test_mast_sensitivity_api_endpoint():
     payload = {
-        "site_id": "shackleton-connecting-ridge",
+        "site_id": "lola-sp-001",
         "start_time_iso": "2027-01-01T00:00:00Z",
         "end_time_iso": "2027-01-04T00:00:00Z",
         "mast_heights": [2.0, 10.0]

@@ -10,6 +10,7 @@ from typing import Dict, Any, Set
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.simulation_engine import RealtimeSimulationSession
+from app.data.sites_catalog import get_sites_catalog
 
 ws_router = APIRouter()
 
@@ -27,7 +28,7 @@ class SimulationConnectionManager:
         self.active_connections.add(websocket)
         # Default session starting Jan 1, 2027 00:00:00 UTC (1735689600.0)
         default_session = RealtimeSimulationSession(
-            site_ids=["shackleton-connecting-ridge", "malapert-mountain"],
+            site_ids=[s["site_id"] for s in get_sites_catalog()[:2]],
             start_unix=1798761600.0,
             mast_height_m=2.0,
             speed_multiplier=60.0
@@ -95,6 +96,12 @@ manager = SimulationConnectionManager()
 
 @ws_router.websocket("/ws/simulation")
 async def websocket_simulation_endpoint(websocket: WebSocket):
+    from app.core.nasa_data import readiness
+    if not readiness()['ready']:
+        await websocket.accept()
+        await websocket.send_json({'type':'error','message':'Official NASA files are not installed. No synthetic fallback is used.'})
+        await websocket.close(code=1013)
+        return
     await manager.connect(websocket)
     try:
         while True:

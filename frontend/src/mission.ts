@@ -12,11 +12,11 @@ export function stored<T>(key:string, fallback:T):T {try{return JSON.parse(local
 export function useStored<T>(key:string, initial:T) {const [value,setValue]=useState<T>(()=>stored(key,initial));useEffect(()=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{/* Storage is optional. */}},[key,value]);return [value,setValue] as const;}
 export function missionEnd(m:Mission){return new Date(new Date(m.start+'T00:00:00Z').getTime()+m.days*86400000).toISOString();}
 export function useMission(){
-  const [mission,setMission]=useStored('lunascope.mission.v3',initialMission);
-  const [primary,setPrimary]=useStored('lunascope.primary.v3','shackleton-connecting-ridge');
-  const [backups,setBackups]=useStored<string[]>('lunascope.backups.v3',[]);
-  const [compare,setCompare]=useStored<string[]>('lunascope.compare.v3',['shackleton-connecting-ridge','malapert-mountain']);
-  const [power,setPower]=useStored('lunascope.power.v3',powerDefaults);
+  const [mission,setMission]=useStored('lunascope.mission.v4',initialMission);
+  const [primary,setPrimary]=useStored('lunascope.primary.v4','lola-sp-001');
+  const [backups,setBackups]=useStored<string[]>('lunascope.backups.v4',[]);
+  const [compare,setCompare]=useStored<string[]>('lunascope.compare.v4',['lola-sp-002']);
+  const [power,setPower]=useStored('lunascope.power.v4',powerDefaults);
   const [sites,setSites]=useState<LandingSite[]>([]);
   const [selected,setSelected]=useState(primary);
   const [matches,setMatches]=useState<Matches|null>(null);

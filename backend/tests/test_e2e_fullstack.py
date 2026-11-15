@@ -14,7 +14,7 @@ def test_frontend_serving():
     res = client.get("/")
     assert res.status_code == 200
     assert '<div id="root"></div>' in res.text
-    assert "LunaScope 2.0" in res.text
+    assert "LunaScope" in res.text
 
 
 def test_frontend_asset_serving():

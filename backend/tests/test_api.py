@@ -20,13 +20,13 @@ def test_get_sites():
     sites = response.json()
     assert len(sites) >= 10
     site_ids = [s["site_id"] for s in sites]
-    assert "shackleton-connecting-ridge" in site_ids
-    assert "malapert-mountain" in site_ids
+    assert "lola-sp-001" in site_ids
+    assert "lola-sp-002" in site_ids
 
 
 def test_evaluate_scenario():
     payload = {
-        "site_ids": ["shackleton-connecting-ridge", "malapert-mountain"],
+        "site_ids": ["lola-sp-001", "lola-sp-002"],
         "start_time_iso": "2027-01-01T00:00:00Z",
         "end_time_iso": "2027-01-04T00:00:00Z",
         "mast_height_m": 2.5,
@@ -42,13 +42,13 @@ def test_evaluate_scenario():
     assert response.status_code == 200
     data = response.json()
     assert "evaluated_sites" in data
-    assert "shackleton-connecting-ridge" in data["evaluated_sites"]
+    assert "lola-sp-001" in data["evaluated_sites"]
     assert "comparative_insights" in data
 
 
 def test_contingency_evaluate():
     payload = {
-        "primary_site_id": "haworth-crater-rim",
+        "primary_site_id": "lola-sp-003",
         "year": 2027,
         "min_sun_days": 10.0,
         "min_joint_days": 5.0
@@ -56,8 +56,8 @@ def test_contingency_evaluate():
     response = client.post("/api/contingency/evaluate", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert data["primary_passed"] is False
-    assert len(data["recommended_backups"]) > 0
+    assert data["primary_passed"] == (data["primary_site"]["max_consec_sun_days"] >= 10 and data["primary_site"]["max_consec_joint_days"] >= 5)
+    assert all(b["is_viable"] for b in data["recommended_backups"])
 
 
 def test_scenario_save_and_export():
@@ -65,10 +65,10 @@ def test_scenario_save_and_export():
     save_payload = {
         "title": "Test Scenario",
         "notes": "Testing persistence and export",
-        "site_ids": ["malapert-mountain"],
+        "site_ids": ["lola-sp-002"],
         "inputs": {"year": 2027},
         "sites_evaluation": {
-            "malapert-mountain": {
+            "lola-sp-002": {
                 "timestamps": [1735689600.0, 1735693200.0],
                 "ephemeris": {
                     "sun_azimuth": [10.0, 15.0],

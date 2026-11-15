@@ -21,9 +21,9 @@ def save_scenario(scenario_data: Dict[str, Any]) -> str:
         "id": scenario_id,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "schema_version": "2.0.0",
-        "engine": "LunaScope-Demonstration-Engine-v2.1",
-        "data_mode": "demonstration",
-        "limitations": "Procedural terrain; approximate ephemeris; no verified terrain safety or live NASA telemetry. Scenarios are held in memory until server restart.",
+        "engine": "LunaScope-NASA-Data-Engine-v3.0",
+        "data_mode": "nasa-official",
+        "limitations": "NASA LOLA 80 m grid and JPL SPICE ephemerides; sampled derived visibility; terrain safety and DSN scheduling remain uncertified. Scenarios are held in memory until server restart.",
         **scenario_data
     }
     _SCENARIO_DB[scenario_id] = deepcopy(scenario_record)

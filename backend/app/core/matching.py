@@ -5,6 +5,7 @@ from pydantic import Field
 from app.api.schemas import EvaluateScenarioRequest
 from app.data.sites_catalog import get_sites_catalog, get_site_by_id
 from app.core.visibility import compute_interval_metrics
+from app.core.nasa_data import provenance
 
 
 class MatchRequest(EvaluateScenarioRequest):
@@ -51,7 +52,7 @@ def match_sites(req: MatchRequest):
         score = sum(w * m[k] for w, k in zip(weights, ['sun_availability_pct', 'earth_availability_pct', 'joint_availability_pct']))
         rows.append({'site_id': sid, 'name': result['site_info']['name'], 'passed': not violations,
                      'score': round(score, 2), 'metrics': m, 'violations': violations,
-                     'explanation': '; '.join(violations) if violations else 'Meets configured constraints in this simulated window.',
+                     'explanation': '; '.join(violations) if violations else 'Meets configured constraints in this NASA-data calculation window.',
                      'terrain_safety': 'unknown', 'power_summary': power['summary'] if power else None})
     rows.sort(key=lambda r: (not r['passed'], -r['score'], r['site_id']))
     passing = [r for r in rows if r['passed']]
@@ -60,5 +61,5 @@ def match_sites(req: MatchRequest):
     return {'generated_at_utc': datetime.now(timezone.utc).isoformat(), 'runtime_ms': round((perf_counter()-started)*1000, 2),
             'inputs': req.model_dump(), 'rankings': rows, 'evaluated_count': len(rows), 'passing_count': len(passing),
             'recommended_primary': recommended, 'backup_sites': [r for r in passing if not recommended or r['site_id'] != recommended['site_id']],
-            'provenance': 'Derived from procedural demonstration terrain and approximate analytical ephemeris. No live NASA observations or verified terrain safety.',
+            'provenance': provenance(),
             'sampling': 'Hourly left-endpoint intervals, clipped at mission end; transitions may differ by up to one sample.'}

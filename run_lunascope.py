@@ -1,10 +1,4 @@
-"""Convenience launcher for LunaScope application."""
-import os
-import subprocess
-import sys
-
-if __name__ == "__main__":
-    app_path = os.path.join(os.path.dirname(__file__), "lunascope", "app.py")
-    cmd = [sys.executable, "-m", "streamlit", "run", app_path]
-    print(f"Launching LunaScope: {' '.join(cmd)}")
-    subprocess.run(cmd)
+"""Compatibility entry point for the NASA-data application."""
+import runpy
+from pathlib import Path
+if __name__=='__main__':runpy.run_path(str(Path(__file__).with_name('run.py')),run_name='__main__')

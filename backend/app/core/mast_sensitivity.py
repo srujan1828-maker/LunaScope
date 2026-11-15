@@ -63,7 +63,7 @@ def evaluate_mast_sensitivity(
 
     return {
         "site_id": site_id,
-        "provenance": "Derived from procedural demonstration terrain; not a validated landing safety estimate",
+        "provenance": "Derived from measured NASA LOLA 80 m terrain and NASA/JPL SPICE; not a certified landing safety estimate",
         "site_name": site_info["name"],
         "baseline_mast_m": min(mast_heights) if mast_heights else 0.5,
         "sweep": sweep_results

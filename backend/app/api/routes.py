@@ -1,5 +1,5 @@
 """
-REST API route definitions for LunaScope 2.0.
+REST API route definitions for LunaScope 3.0.
 """
 
 from datetime import datetime, timezone
@@ -37,11 +37,19 @@ from app.core.scenario_store import (
 )
 
 router = APIRouter()
+from app.core.nasa_data import readiness,provenance,manifest
+
+@router.get('/data/status')
+def data_status():return readiness()
+
+@router.get('/data/provenance')
+def data_provenance():return {**provenance(), 'manifest':manifest()}
+
 
 
 @router.get("/health")
 def health_check() -> Dict[str, Any]:
-    return {"status": "ok", "app": "LunaScope 2.0", "timestamp_utc": datetime.now(timezone.utc).isoformat()}
+    return {"status": "ok" if readiness()["ready"] else "data_required", "data": readiness(), "app": "LunaScope 3.0", "timestamp_utc": datetime.now(timezone.utc).isoformat()}
 
 
 @router.get("/sites")
@@ -166,13 +174,7 @@ def evaluate_scenario(req: EvaluateScenarioRequest) -> Dict[str, Any]:
         "inputs": req.model_dump(),
         "evaluated_sites": sites_result,
         "comparative_insights": insights,
-        "provenance": {
-            "site_catalog": "Assumed: illustrative hard-coded catalog; not extracted from Wueller/Zenodo",
-            "topography": "Derived from procedural demonstration terrain; no LOLA raster integrated",
-            "sky_geometry": "Approximate analytical model; not validated against SPICE/Horizons",
-            "visibility_model": "Derived (Penumbral solar disk grazing & geometric DTE)",
-            "power_model": "Assumed (User panel/battery hardware parameters)"
-        }
+        "provenance": {**provenance(), "power_model": "User-specified hardware assumptions applied to NASA-data illumination"}
     }
 
 

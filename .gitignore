@@ -1,6 +1,8 @@
+# Local dependencies and generated caches
 .venv/
 venv/
-__pycache__/
+.science-deps/
+**/__pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
@@ -8,6 +10,14 @@ __pycache__/
 .coverage
 htmlcov/
 frontend/node_modules/
+
+# Downloaded scientific inputs: source manifest and derived catalog are tracked separately
+data/nasa/
+*.part
+
+# Local credentials and environment
 .env
 .env.*
 !.env.example
+*.pem
+*.key

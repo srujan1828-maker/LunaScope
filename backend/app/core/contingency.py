@@ -1,7 +1,6 @@
 """
 Tier 1: Contingency Planner & Backup Candidate Finder.
-Evaluates Artemis candidate sites against assumed demonstration multi-year illumination values
-from Wueller et al. (2026) with explicit provenance badges and plain-language explanations.
+Evaluates NASA LOLA analysis locations against annual statistics computed using official terrain and JPL SPICE.
 """
 
 from typing import Dict, List, Any
@@ -18,6 +17,8 @@ def evaluate_contingency(
     Evaluate the selected primary site against user criteria for a given year (2025-2032)
     and rank viable backup candidates with deterministic pass/fail explanations.
     """
+    from app.core.annual_metrics import annual_statistics
+    yearly=annual_statistics(year)
     year_str = str(year)
     catalog = get_sites_catalog()
     
@@ -28,7 +29,7 @@ def evaluate_contingency(
     evaluated_candidates = []
     
     for site in catalog:
-        site_annual = site["annual_data"].get(year_str)
+        site_annual = yearly.get(site["site_id"])
         if not site_annual:
             continue
             
@@ -96,7 +97,7 @@ def evaluate_contingency(
         "recommended_backups": passing_backups,
         "failing_candidates": failing_candidates,
         "provenance": {
-            "annual_metrics": "Assumed: hard-coded illustrative annual metrics; not verified against Wueller/Zenodo",
+            "annual_metrics": "Derived from NASA LOLA terrain and JPL SPICE for the requested full calendar year, 2m mast, hourly intervals",
             "contingency_ranking": "Derived (LunaScope deterministic threshold comparison)",
             "criteria_thresholds": "Assumed (User planning constraints)"
         }

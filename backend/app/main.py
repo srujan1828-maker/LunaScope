@@ -1,5 +1,5 @@
 """
-LunaScope 2.0 FastAPI Application Entrypoint.
+LunaScope 3.0 FastAPI Application Entrypoint.
 Provides REST API endpoints and static file serving for the React frontend.
 """
 
@@ -13,13 +13,19 @@ from fastapi.responses import FileResponse
 from app.api.routes import router as api_router
 from app.api.ws import ws_router
 from app.api.matches import router as match_router
-from fastapi import HTTPException
+from fastapi import HTTPException,Request
+from fastapi.responses import JSONResponse
+from app.core.nasa_data import DataUnavailable
 
 app = FastAPI(
-    title="LunaScope 2.0 API",
+    title="LunaScope 3.0 API",
     description="Lunar Mission Window, 360° Horizon & Contingency Navigator Engine",
-    version="2.0.0"
+    version="3.0.0"
 )
+
+@app.exception_handler(DataUnavailable)
+async def missing_data(request:Request,exc:DataUnavailable):
+    return JSONResponse(status_code=503,content={'detail':str(exc),'data_mode':'nasa-official','synthetic_fallback':False})
 
 # CORS middleware for development flexibility
 app.add_middleware(
@@ -39,7 +45,7 @@ app.include_router(match_router, prefix="/api")
 async def provenance_header(request, call_next):
     response = await call_next(request)
     if request.url.path.startswith('/api/'):
-        response.headers['X-LunaScope-Data-Mode'] = 'demonstration'
+        response.headers['X-LunaScope-Data-Mode'] = 'nasa-official'
     return response
 
 

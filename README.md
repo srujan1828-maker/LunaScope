@@ -1,60 +1,80 @@
-# LunaScope 2.1 — interactive lunar planning demonstration
+# LunaScope — NASA Space Apps Challenge project
 
-This application computes mission-window comparisons, procedural horizons, approximate Sun/Earth geometry, solar exposure, battery energy balance, and reactive primary/backup recommendations. Live means computed results delivered interactively; there is no live NASA telemetry feed.
+LunaScope compares lunar south-pole surface-operation windows using official NASA terrain and NASA/JPL ephemerides. It includes a six-page frontend, a connected mission planner, real terrain map, horizon/time simulation, editable mission timeline, educator diagrams, data provenance, and reactive primary/backup matching.
 
-## Start
+## Official scientific inputs
 
-Install Python dependencies with `python -m pip install -r backend/requirements.txt`, then run `python run.py`. Open http://127.0.0.1:8000. A built frontend is included. For frontend development: `cd frontend`, `npm ci`, `npm run dev`. The Vite proxy supports both HTTP and WebSocket traffic. Rebuild with `npm run build`.
-
-## Live matching
-
-The workspace evaluates all 10 demonstration sites automatically after mission dates, duration, mast height, antenna margin, hardware, or matching requirements change. Filters cover minimum solar coverage, minimum Earth visibility (optional communications), maximum shadow duration, minimum consecutive sunlight, and optional battery reserve. Results include scored rankings, explanations, primary recommendation and passing backups. An impossible requirement yields no passing primary. Search and sorting are available in the matching table. Set primary updates the map, comparison tray, charts and selected simulation sites.
-
-`POST /api/matches/evaluate` and `/api/ws/matches` use the same engine. WebSocket messages contain `{ "revision": 1, "parameters": { ... } }`. Responses echo revision so the frontend can discard obsolete results. Requests are debounced; HTTP is used if the socket cannot connect. Each result is a mission-window snapshot, not a prediction based on external live observations.
-
-## Data and scientific limits
-
-| Quantity | Actual input / status |
+| Input | Integrated use |
 |---|---|
-| Catalog and annual metrics | Hard-coded demonstration assumptions. Coordinates and values have no verified row-level source mapping. Ten examples are not the official current NASA candidate list. |
-| Terrain / map | Procedural model using assumed landmarks and harmonics. No LOLA DEM is loaded by the primary backend. |
-| Sun / Earth | Approximate analytical formulas, not an independently validated implementation of Meeus, SPICE, Horizons, or DE440. |
-| Horizon | Vectorized spherical ray geometry, 360 compass samples, near samples from 20m and radial samples out to 120km. Geometry does not establish surface accuracy. |
-| Sun exposure | Uniform circular disk against a locally flat skyline, periodic horizon interpolation. Optional linear limb-darkening flux integration. Complex terrain silhouettes across the disk are not integrated. |
-| DTE / DSN | Earth-center geometric visibility with an angular margin. No RF link budget, booked DSN contact, or network availability is verified. |
-| Battery | User-configured constant load, panel efficiency and charge/discharge losses. No thermal model, degradation, or hardware certification. |
-| Dispersion | Deterministic concentric sample points over the procedural terrain; not Monte Carlo or validated landing-survival probability. |
-| Terrain safety | Unknown. No slopes, rock hazards or lander stability data are verified. |
-| Scenario storage | In-memory snapshots with copy isolation. Restart clears saved scenarios; downloaded JSON/CSV remain usable. |
+| NASA LRO/LOLA `LDEM_80S_80M` V2.1, PDS dataset `LRO-L-LOLA-4-GDR-V1.0` | Elevations and spherical terrain horizons at 80 m/pixel. Heights are stored with the published 0.5 m scaling relative to the 1,737.4 km sphere. |
+| NASA/JPL `de421.bsp` | Sun/Earth/Moon geometry for the requested mission dates. |
+| NAIF `moon_pa_de421_1900-2050.bpc` and `moon_080317.tf` | Lunar orientation in `MOON_ME_DE421`, matching the terrain reference frame. |
+| NAIF `naif0012.tls`, `pck00011.tpc` | Time conversion and planetary constants. |
 
-Endpoint geometry is retained for plots, but metrics and power integrate only the actual mission intervals; the end sample contributes zero hours. A partial final hour is clipped. Transitions are sampled hourly and can differ by up to one sample; high precision timing is not claimed. Match scores are explicit weighted coverage scores, not landing probabilities. Legacy annual contingency uses the demonstration annual table; live matching uses the configured date window.
+Source URLs, retrieval time, sizes and SHA-256 hashes are recorded in [data/nasa_provenance.json](data/nasa_provenance.json), and shown on the Data & Sources page. The map is a hillshade derived from this raster, not a procedural crater drawing. No synthetic fallback dataset is used. Missing scientific inputs return HTTP 503 with setup instructions.
 
-The separately retained `lunascope/` Streamlit prototype has different synthetic data and algorithms. Its README explains that status. `run.py` is the primary supported entry point for this React/FastAPI application.
+The 13 analysis locations are actual cells selected reproducibly from the official raster: high ground, regional grid slope ≤8°, at least 20 km spacing, within 120 km of the pole. Their row/column, coordinates, elevation and source are recorded in [nasa_sites.json](backend/app/data/nasa_sites.json). This is LunaScope's selection method; these points are **not** represented as NASA-approved landing sites or as the official Artemis candidate-region list.
+
+## Run locally
+
+Use Python 3.11 or later and Node.js 20 or later. From the repository root:
+
+```sh
+python -m pip install -r backend/requirements.txt
+python backend/scripts/fetch_nasa_data.py
+python backend/scripts/prepare_nasa_data.py
+python run.py
+```
+
+Open **http://127.0.0.1:8000**. The built frontend is included. `run_lunascope.py` is a compatibility entry point for the same app. Official raw inputs total approximately 47 MB; the decoded raster needs approximately 116 MB. These files are downloaded locally and excluded from Git, while their source manifest and derived location catalog are tracked.
+
+Frontend development:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+The development proxy forwards REST and WebSocket traffic to port 8000. `npm run build` compiles styles, runs TypeScript checking and produces the production bundle.
+
+## How analysis works
+
+- A spherical raycaster samples the official LOLA raster in 360 compass directions out to 150 km. Near samples start at the 80 m grid scale; no invented micro-terrain is added.
+- SPICE supplies Sun and Earth vectors with `LT+S` corrections in the same DE421 frame. Local observer geometry includes the actual raster elevation and finite body distance.
+- Solar-disk exposure and Earth-center clearance are derived from those inputs. Hourly samples integrate the exact requested duration, including partial final intervals.
+- The matcher applies consecutive-sunlight, visibility, shadow-gap and optional battery-reserve constraints, ranks actual calculations, and returns no passing primary if all locations fail.
+- Legacy annual contingency is now calculated for the requested calendar year from the official inputs; the fabricated multi-year table was removed.
+- Dispersion uses deterministic points on concentric ellipses, with terrain and geometry recalculated at each location. It is a spatial sensitivity calculation, not a landing-survival probability.
+- Scenario JSON/CSV exports preserve inputs, computed results and provenance. Server scenario storage is in memory; downloaded exports remain available after restart.
+
+## Interface
+
+Home, Mission Planner, Horizon Simulator, Timeline, Educator Mode, and Data & Sources share mission settings and selected locations. The planner supports search, sorting, primary/backup choice and three-site comparison. Mission phases, dates and durations are editable and persist locally in the browser.
+
+Your supplied MP4 remains the decorative background. It is not represented as NASA observation footage. A single video decoder and cached first-frame bridge smooth the repeat. Educator diagrams are conceptual explanations, not scientific input datasets.
+
+## Accuracy and remaining unknowns
+
+Official inputs do not make the application flight-qualified. The 80 m terrain grid cannot resolve lander-scale rocks, slopes, or short shadows. Ray and time sampling can miss narrow features and brief events. Grid slopes are derived regional slopes, not certified landing-safety thresholds. Direct-to-Earth clearance is geometric; RF performance, relay coverage and DSN scheduling are unknown. Power hardware parameters are user assumptions, and no thermal-survival model is claimed.
+
+LunaScope is an independent project for the NASA International Space Apps Challenge, as specified by the project owner. Using official NASA data does not imply NASA endorsement or certification. Select the exact challenge/year and include your team/submission URL in competition materials.
 
 ## Verification
 
-Run `python -m pytest backend/tests -q` from the project root. Run `npx tsc --noEmit` and `npm run build` in `frontend/`. Tests check software behavior and physical accounting; passing tests do not validate the actual lunar surface, ephemeris accuracy, or NASA affiliation. Measured results from this repair are recorded in VERIFICATION.md.
+```sh
+python -m pytest backend/tests -q
+cd frontend
+npm run build
+```
 
-## Research references (not integrated data)
+Tests include NASA file hashes, original PDS pixel comparisons, direct SPICE-vector checks, missing-data failure behavior, physics accounting, API/exports, matching and WebSocket commands. See [VERIFICATION.md](VERIFICATION.md) for measured results.
 
-- Wueller et al., DOI: https://doi.org/10.1029/2025JE009434 and https://zenodo.org/records/17084058
-- NASA candidate-region update: https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/
-- NASA illumination context: https://science.nasa.gov/photojournal/south-pole-illumination-map/
-- NASA SPICE: https://naif.jpl.nasa.gov/naif/
+## Sources and acknowledgements
 
-The cited paper is real, but these demonstration values are not its results. NASA Space Apps participation, NASA endorsement, flight qualification, and research validation are not established by this repository.
+- [NASA LOLA PDS archive](https://imbrium.mit.edu/BROWSE/LOLA_GDR/POLAR/SOUTH_POLE/)
+- [NASA/JPL NAIF generic kernels](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/)
+- [NASA's October 2024 Artemis candidate-region announcement](https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/)
+- [NASA International Space Apps Challenge](https://www.spaceappschallenge.org/)
 
-## Frontend redesign — 14 November 2026
-
-The default frontend now follows the supplied six-page brief:
-
-- Home: cinematic video hero, mission-planning and site-exploration links, capabilities, three-step guide and final CTA.
-- Mission Planner: shared mission settings, live backend matching, interactive polar map, search and column sorting, primary and backup selection, three-site comparison, explanations and scenario export.
-- Horizon Simulator: date, duration and mast controls, Sun/Earth markers, scrubber and playback, illumination/contact chart, battery sandbox, dispersion and mast sensitivity tools.
-- Timeline: eight editable mission phases, dates, durations, statuses, Gantt view, alignment to the selected mission, and JSON export.
-- Educator Mode: interactive ridge-clearance and communication diagrams with explanations.
-- Data & Sources: six authoritative references and explicit integration/provenance status.
-
-The supplied MP4 is copied to `frontend/public/assets/lunar-background.mp4`. One MP4 asset is reused across pages with muted inline playback, overlays, playback control, and a static SVG fallback. A cached first-frame canvas softly covers the native loop boundary. Only one video decoder is used, its opacity remains visible, and the original MP4 file is unchanged. The 10 actual demonstration catalog rows are displayed instead of claiming 130 loaded sites. Defaults match the brief (120 sunlight days, 180 mission days); a 14-day demonstration preset is available. An impossible requirement correctly produces no passing recommendation. A verified terrain requirement yields Unknown because no verified slope dataset is connected.
-
-Mission settings, primary/backup/comparison selections and edited timeline phases persist locally in the browser. All site-analysis calculations continue to use the working FastAPI backend. Styles are compiled locally with Tailwind for existing tools; the frontend no longer needs remote font or Tailwind scripts to load. Run `npm run dev` for development or `npm run build` for the single-port production server.
+Please credit the NASA LRO/LOLA team for terrain products and NASA/JPL/NAIF for SPICE and ephemerides. Upstream data retain their source provenance and applicable usage guidance.

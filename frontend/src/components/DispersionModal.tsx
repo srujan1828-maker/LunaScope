@@ -73,7 +73,7 @@ export const DispersionModal: React.FC<DispersionModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100">
-                Monte Carlo Landing Dispersion & Terrain Sensitivity
+                Landing Dispersion & NASA Terrain Sensitivity
               </h2>
               <p className="text-xs text-slate-400">
                 Evaluate shadow gradient & mission risk bounds across the touchdown error ellipse

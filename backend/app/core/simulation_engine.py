@@ -1,7 +1,7 @@
 """
-Demonstration Real-Time Lunar Simulation Engine.
+NASA-data Real-Time Lunar Simulation Engine.
 Manages live simulation sessions, computes high-frequency topocentric frames,
-instantaneous solar flux, battery dynamics, predictive event horizons, and NASA DSN contacts.
+instantaneous solar flux, battery dynamics, predictive event horizons, and geometric Earth visibility. DSN scheduling remains unknown.
 """
 
 import math
@@ -13,7 +13,7 @@ from app.core.coordinates import R_MOON
 from app.core.horizon import compute_horizon_360
 from app.core.ephemeris import (
     datetime_to_jd,
-    solar_coordinates_meeus,
+
     get_subsolar_coordinates,
     get_subearth_coordinates,
     topocentric_az_el,
@@ -25,6 +25,8 @@ from app.core.ephemeris import (
 from app.core.visibility import fractional_solar_visibility, evaluate_dte_visibility
 from app.core.ground_stations import evaluate_dsn_coverage
 from app.data.sites_catalog import get_site_by_id
+from app.core.spice_geometry import body_vectors
+from app.core.nasa_data import provenance
 
 SOLAR_CONSTANT_W_M2: float = 1361.0
 
@@ -105,9 +107,12 @@ class RealtimeSimulationSession:
         dt_obj = datetime.fromtimestamp(t, tz=timezone.utc)
         jd = datetime_to_jd(dt_obj)
 
-        # 1. High-precision Meeus astronomical positions
-        _, _, r_au = solar_coordinates_meeus(jd)
-        sun_dist_m = r_au * AU_METERS
+        # 1. Official NASA/JPL SPICE vectors in the LOLA DE421 lunar frame
+        import numpy as np
+        sun_vector, earth_vector = body_vectors((float(t),))
+        sun_dist_m = float(np.linalg.norm(sun_vector[0]))
+        earth_dist_m = float(np.linalg.norm(earth_vector[0]))
+        r_au = sun_dist_m / AU_METERS
         instant_flux = 1361.0 / (r_au**2)
 
         sub_sun_lat, sub_sun_lon = get_subsolar_coordinates(t)
@@ -143,7 +148,7 @@ class RealtimeSimulationSession:
             # Topocentric Earth
             earth_az, earth_el = topocentric_az_el(
                 sinfo["lat_deg"], sinfo["lon_deg"], sub_earth_lat, sub_earth_lon,
-                body_distance_m=MEAN_LUNAR_DIST_METERS, site_elevation_m=sinfo["elevation_m"]
+                body_distance_m=earth_dist_m, site_elevation_m=sinfo["elevation_m"]
             )
             earth_az_idx = int(round(earth_az)) % 360
             h_earth = float(np.interp(earth_az % 360, np.arange(361), horizon + [horizon[0]]))
@@ -241,7 +246,7 @@ class RealtimeSimulationSession:
 
         return {
             "type": "telemetry_frame",
-            "provenance": "Procedural terrain and approximate ephemeris; simulated telemetry, no live NASA feed",
+            "provenance": provenance(),
             "timestamp_unix": t,
             "timestamp_iso": iso_time,
             "speed_multiplier": self.speed_multiplier,

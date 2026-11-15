@@ -1,5 +1,5 @@
 """
-Landing Dispersion & Terrain Sensitivity Analysis (Monte Carlo Sampling).
+Landing Dispersion & Terrain Sensitivity Analysis (Deterministic Spatial Sampling).
 Evaluates operational risk bounds across a landing dispersion ellipse (100m to 500m)
 accounting for local micro-topography, horizon shifts, and shadow gradients.
 """
@@ -123,7 +123,7 @@ def evaluate_landing_dispersion(
     spread = envelope["sun_availability_pct"]["spread"]
     if spread < 5.0:
         robustness = "High (Homogeneous Terrain)"
-        robustness_notes = "Minor illumination variance across the dispersion ellipse. This describes illumination spread in the demonstration surface; landing hazard risk is unknown."
+        robustness_notes = "Minor illumination variance across the dispersion ellipse. This describes illumination spread in the 80 m NASA LOLA grid; landing hazard risk is unknown."
     elif spread < 15.0:
         robustness = "Moderate (Ridge Sensitivity)"
         robustness_notes = "Terrain ridges cause up to 15% illumination variance depending on touchdown location."
@@ -133,7 +133,7 @@ def evaluate_landing_dispersion(
 
     return {
         "site_id": site_id,
-        "provenance": "Derived from procedural demonstration terrain; not a validated landing safety estimate",
+        "provenance": "Derived from measured NASA LOLA 80 m terrain and NASA/JPL SPICE; not a certified landing safety estimate",
         "site_name": site_info["name"],
         "dispersion_parameters": {
             "semi_major_axis_m": semi_major_m,

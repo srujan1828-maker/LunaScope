@@ -1,0 +1,49 @@
+{
+  "retrieved_at_utc": "2026-11-14T17:59:49.494776+00:00",
+  "terrain_product": "LRO-L-LOLA-4-GDR-V1.0 / LDEM_80S_80M V2.1",
+  "frame": "MOON_ME_DE421",
+  "pixel_scale_m": 80,
+  "height_scale_m": 0.5,
+  "reference_radius_m": 1737400,
+  "sources": {
+    "LDEM_80S_80M.JP2": {
+      "url": "https://imbrium.mit.edu/DATA/LOLA_GDR/POLAR/JP2/LDEM_80S_80M.JP2",
+      "bytes": 29837992,
+      "sha256": "c088dd4f510e879375ee7e6f0d320ba84115f535f45fb592dd7f83a7d2e83ae3"
+    },
+    "LDEM_80S_80M_JP2.LBL": {
+      "url": "https://imbrium.mit.edu/DATA/LOLA_GDR/POLAR/JP2/LDEM_80S_80M_JP2.LBL",
+      "bytes": 6354,
+      "sha256": "497512747bb56490d50cf3f4945f2cb736bf61cd19b65fa61a826825e2a35d79"
+    },
+    "de421.bsp": {
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/a_old_versions/de421.bsp",
+      "bytes": 16790528,
+      "sha256": "08b20db2ae22488650641c5a9033e5bfda4b1c4b440cfeaf20f621cfa18ecdb3"
+    },
+    "moon_pa_de421_1900-2050.bpc": {
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de421_1900-2050.bpc",
+      "bytes": 1770496,
+      "sha256": "656f90616403d75a75f0cd6c8830fc5b44f8cb4facb5ccb8915e752b397520cf"
+    },
+    "moon_080317.tf": {
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_080317.tf",
+      "bytes": 21437,
+      "sha256": "78732477b96f9863e7b0d65bcee3c22b8707ca5ed0db56d1173319cb2e8c7993"
+    },
+    "naif0012.tls": {
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
+      "bytes": 5257,
+      "sha256": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b"
+    },
+    "pck00011.tpc": {
+      "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+      "bytes": 131226,
+      "sha256": "3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1"
+    }
+  },
+  "citations": [
+    "https://imbrium.mit.edu/BROWSE/LOLA_GDR/POLAR/SOUTH_POLE/",
+    "https://naif.jpl.nasa.gov/naif/data.html"
+  ]
+}

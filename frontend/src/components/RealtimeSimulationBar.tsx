@@ -138,7 +138,7 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
             />
             <span className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-cyan-400" />
-              Streamed demonstration simulation
+              NASA-data streamed simulation
             </span>
           </div>
 

@@ -7,3 +7,7 @@ scipy>=1.12.0
 pytest>=8.0.0
 httpx>=0.27.0
 websockets>=12.0
+
+rasterio>=1.4
+spiceypy>=8.0
+Pillow>=10.0
