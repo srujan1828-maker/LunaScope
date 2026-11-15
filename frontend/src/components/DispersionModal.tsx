@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
+import {API} from '../mission';
 import { LandingSite } from '../types';
 import { Target, X, ShieldAlert, Sparkles, RefreshCw } from 'lucide-react';
 
@@ -23,16 +24,19 @@ export const DispersionModal: React.FC<DispersionModalProps> = ({
   const [semiMinorM, setSemiMinorM] = useState<number>(120.0);
   const [numSamples, setNumSamples] = useState<number>(17);
 
+  const request=useRef<AbortController|null>(null);
+  const [error,setError]=useState('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [result, setResult] = useState<any>(null);
 
   const fetchDispersion = async () => {
     if (!site) return;
-    setIsLoading(true);
+    request.current?.abort();const controller=new AbortController();request.current=controller;
+    setIsLoading(true);setResult(null);setError('');
     try {
       const startDt = new Date(startDateIso);
       const endDt = new Date(startDt.getTime() + durationDays * 86400 * 1000);
-      const res = await fetch('/api/simulation/dispersion', {
+      const res = await fetch(API+'/api/simulation/dispersion', {signal:controller.signal,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,11 +50,12 @@ export const DispersionModal: React.FC<DispersionModalProps> = ({
         }),
       });
       const data = await res.json();
-      setResult(data);
+      if(!res.ok)throw new Error(typeof data.detail==='string'?data.detail:'Dispersion analysis failed. Check the mission inputs.');
+      if(!controller.signal.aborted)setResult(data);
     } catch (e) {
-      console.error(e);
+      if(!controller.signal.aborted)setError(e instanceof Error?e.message:'Dispersion analysis failed.');
     } finally {
-      setIsLoading(false);
+      if(!controller.signal.aborted)setIsLoading(false);
     }
   };
 
@@ -58,12 +63,16 @@ export const DispersionModal: React.FC<DispersionModalProps> = ({
     if (isOpen && site) {
       fetchDispersion();
     }
-  }, [isOpen, site]);
+    return()=>request.current?.abort();
+  }, [isOpen, site, startDateIso, durationDays, mastHeightM]);
 
+  const ellipseKey=[semiMajorM,semiMinorM,numSamples].join(',');
+  const previousEllipse=useRef(ellipseKey);
+  useEffect(()=>{if(previousEllipse.current===ellipseKey)return;previousEllipse.current=ellipseKey;request.current?.abort();setIsLoading(false);setResult(null);setError('');},[ellipseKey]);
   if (!isOpen || !site) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="Landing dispersion" className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
       <div className="glass-panel w-full max-w-3xl rounded-2xl border border-cyan-500/30 p-6 flex flex-col gap-5 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -81,7 +90,7 @@ export const DispersionModal: React.FC<DispersionModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={onClose} aria-label="Close dialog"
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
@@ -137,7 +146,7 @@ export const DispersionModal: React.FC<DispersionModalProps> = ({
         </div>
 
         {/* Results */}
-        {result && (
+        {error&&<p role="alert" className="text-red-400">{error}</p>}{result && (
           <div className="flex flex-col gap-4">
             {/* Robustness badge */}
             <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between">

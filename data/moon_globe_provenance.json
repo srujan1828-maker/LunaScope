@@ -1,0 +1,11 @@
+{
+  "original_source": "https://svs.gsfc.nasa.gov/4720/",
+  "original_asset": "lroc_color_2k.jpg",
+  "retrieved_from": "https://raw.githubusercontent.com/MaxwellLee/physics-lab/main/assets/textures/moon_2048.jpg",
+  "mirror_source_record": "https://raw.githubusercontent.com/MaxwellLee/physics-lab/main/assets/textures/SOURCES.md",
+  "bytes": 549787,
+  "sha256": "ec98386c3b39ad2dab5970db5b5aecb8946db3f450aee4d78ce7382e0060bf87",
+  "use": "Whole Moon visualization only; NASA visualization-optimized mosaic, not mission analysis input",
+  "credit": "NASA Scientific Visualization Studio / LRO / LROC",
+  "processing": "Mirror JPEG recompression at quality 93; source dimensions retained. Not byte-identical to the NASA original."
+}

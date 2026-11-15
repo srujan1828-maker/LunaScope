@@ -1,23 +1,60 @@
-import React,{useEffect,useState} from 'react';
-import {ArrowUpRight,ArrowRight,Compass,MapPin,Sun,Radio,ShieldCheck,ChevronRight,Search,SlidersHorizontal,Check,Plus,X,Orbit,CalendarDays,Clock,ExternalLink,Info,Download,Play,Pause,RotateCcw,Target} from 'lucide-react';
+import React,{useEffect,useState,lazy,Suspense} from 'react';
+import {
+  ArrowUpRight,
+  ArrowRight,
+  Compass,
+  MapPin,
+  Sun,
+  Radio,
+  ShieldCheck,
+  ChevronRight,
+  Search,
+  SlidersHorizontal,
+  Check,
+  Plus,
+  X,
+  Orbit,
+  CalendarDays,
+  Clock,
+  ExternalLink,
+  Info,
+  Download,
+  Play,
+  Pause,
+  RotateCcw,
+  Target,
+  Calendar,
+  Antenna,
+  Layers,
+  Mountain,
+  Database,
+  Box,
+  BarChart3,
+  Globe2,
+  Lightbulb,
+  CheckCircle2,
+} from 'lucide-react';
 import {MissionState,useStored} from './mission';
-import {LunarMap} from './components/NasaLunarMap';
-import {ValidationPanel} from './components/ValidationPanel';
-const SurfaceExplorer=React.lazy(()=>import('./components/SurfaceExplorer').then(m=>({default:m.SurfaceExplorer})));
+import {LunarMap} from './components/LunarMap';
+import {HorizonGraph} from './components/HorizonGraph';
+const SurfaceExplorer=lazy(()=>import('./components/SurfaceExplorer').then(m=>({default:m.SurfaceExplorer})));
+import {MissionFeedback} from './components/MissionFeedback';
+import {SolarElevationDistribution} from './components/SolarElevationDistribution';
+import {TimelineInteractive} from './components/TimelineInteractive';
+import {LearnInteractive} from './components/LearnInteractive';
+import {DataSourcesInteractive} from './components/DataSourcesInteractive';
+import {LandingSite} from './types';
 
 export type Page='home'|'planner'|'horizon'|'timeline'|'educator'|'sources';
 export const pageNames:Record<Page,string>={home:'Home',planner:'Mission Planner',horizon:'Horizon Simulator',timeline:'Timeline',educator:'Educator Mode',sources:'Data & Sources'};
 export function PageTitle({number,title,description,children}:{number:string;title:string;description:string;children?:React.ReactNode}){return <div className="page-title"><div><div className="eyebrow">LUNASCOPE / {number}</div><h1>{title}<span>.</span></h1><p>{description}</p></div>{children}</div>;}
-export function DataNote(){
-  const [ready,setReady]=useState<boolean|null>(null);
-  useEffect(()=>{fetch('/api/data/status').then(r=>r.json()).then(r=>setReady(r.ready)).catch(()=>setReady(false));},[]);
-  return <div className="data-note"><Info size={14}/><span>{ready===null?'Checking official NASA inputs…':ready?'NASA LRO/LOLA 80 m terrain + JPL SPICE geometry. Derived visibility; landing safety and DSN scheduling remain unverified.':'Official NASA files are unavailable. Analysis is disabled until they are installed; no synthetic fallback is used.'}</span><span className="data-label">{ready?'NASA DATA':'DATA STATUS'}</span></div>;
-}
+export function DemoNote(){return <div className="demo-note"><Info size={14}/><span>NASA LOLA terrain and JPL SPICE geometry. Derived analysis points; landing safety remains unassessed.</span><span className="demo-label">NASA INPUTS</span></div>;}
 export function Status({value}:{value:string}){return <span className={`status ${value.toLowerCase()}`}><i/>{value}</span>;}
+
 export function Home({navigate,count,year}:{navigate:(p:Page)=>void;count:number;year:string}){
-  const features=[{icon:Compass,title:'Mission Planning',body:'Define mission parameters and identify suitable landing locations based on NASA terrain, sunlight, and communication constraints.',page:'planner' as Page},{icon:MapPin,title:'Site Selection',body:'Compare candidate lunar landing locations using geographic and environmental conditions.',page:'planner' as Page},{icon:Orbit,title:'Horizon Simulation',body:'Explore sunlight conditions, illumination windows, and Earth visibility throughout the mission.',page:'horizon' as Page}];
-  return <><section className="home-hero"><div className="hero-content"><div className="eyebrow"><i className="signal-dot"/> LUNAR SOUTH POLE EXPLORATION</div><h1>Plan the window.<br/><em>Prepare the backup.</em></h1><p>Explore lunar landing opportunities, evaluate surface conditions, and identify terrain-derived locations with intelligent lunar mission planning.</p><div className="hero-buttons"><button className="button primary" onClick={()=>navigate('planner')}>Start Mission Planning <ArrowUpRight size={17}/></button><button className="button secondary" onClick={()=>{navigate('planner');setTimeout(()=>document.getElementById('candidate-sites')?.scrollIntoView({behavior:'smooth'}),120);}}>Explore Lunar Sites <ArrowRight size={16}/></button></div>
-    <div className="hero-facts"><div><strong>{count||13}<span> / LOLA</span></strong><p>Terrain analysis points</p></div><div><strong>{year}</strong><p>Mission window</p></div><div><strong>South Pole</strong><p>Exploration region</p></div></div></div>
+  const features=[{icon:Compass,title:'Mission Planning',body:'Define mission parameters and identify suitable landing locations based on sunlight, terrain, and communication constraints.',page:'planner' as Page},{icon:MapPin,title:'Site Selection',body:'Compare candidate lunar landing locations using geographic and environmental conditions.',page:'planner' as Page},{icon:Orbit,title:'Horizon Simulation',body:'Explore sunlight conditions, illumination windows, and Earth visibility throughout the mission.',page:'horizon' as Page}];
+  return <><section className="home-hero"><div className="hero-content"><div className="eyebrow"><i className="signal-dot"/> LUNAR SOUTH POLE EXPLORATION</div><h1>Plan the window.<br/><em>Prepare the backup.</em></h1><p>Explore lunar landing opportunities, evaluate surface conditions, and identify locations for further study with intelligent lunar mission planning.</p><div className="hero-buttons"><button className="button primary" onClick={()=>navigate('planner')}>Start Mission Planning <ArrowUpRight size={17}/></button><button className="button secondary" onClick={()=>{navigate('planner');setTimeout(()=>document.getElementById('candidate-sites')?.scrollIntoView({behavior:'smooth'}),120);}}>Explore Lunar Sites <ArrowRight size={16}/></button></div>
+    <div className="hero-facts"><div><strong>{count}<span> / LOLA</span></strong><p>Candidate sites</p></div><div><strong>{year}</strong><p>Mission window</p></div><div><strong>South Pole</strong><p>Exploration region</p></div></div></div>
     <div className="hero-coordinate"><span>THE NEXT FRONTIER</span><strong>90°00′00″ S</strong><small>Explore with clarity. Plan with confidence.</small></div><div className="hero-bottom"><span>MISSION PLANNING, WITH PERSPECTIVE</span><a href="#capabilities">SCROLL TO EXPLORE <span>↓</span></a></div>
   </section><section id="capabilities" className="home-section"><div className="section-heading"><div><span className="eyebrow">BUILT FOR THE NEXT STEP</span><h2>Every possibility. A clearer plan.</h2></div><p>A connected workspace for exploring<br/>the possibilities of the lunar south pole.</p></div><div className="feature-grid">{features.map((f,i)=><button className="feature-card" key={f.title} onClick={()=>navigate(f.page)}><div className="feature-top"><f.icon size={25} strokeWidth={1.3}/><span>0{i+1}</span></div><h3>{f.title}</h3><p>{f.body}</p><span className="text-link">Explore tool <ArrowUpRight size={15}/></span></button>)}</div></section>
   <section className="home-section steps-section"><span className="eyebrow">FROM QUESTION TO MISSION</span><h2>A considered path forward.</h2><div className="steps">{[['Define Mission','Configure mission duration, sunlight requirements, and lander parameters.'],['Analyze Sites','Evaluate lunar locations using mission feasibility criteria.'],['Select & Prepare','Choose a primary landing location and identify backup sites.']].map(([title,body],i)=><div key={title}><span className="step-number">0{i+1}</span><div><h3>{title}</h3><p>{body}</p></div>{i<2&&<ArrowRight size={20}/>}</div>)}</div></section>
@@ -25,93 +62,659 @@ export function Home({navigate,count,year}:{navigate:(p:Page)=>void;count:number
 }
 
 function Numeric({label,value,onChange,min,max,step=1,hint}:{label:string;value:number;onChange:(n:number)=>void;min:number;max:number;step?:number;hint?:string}){return <label className="field">{label}<input type="number" required value={value} min={min} max={max} step={step} onChange={e=>onChange(e.target.valueAsNumber)}/>{hint&&<small>{hint}</small>}</label>;}
-export function Planner({state,navigate,onWindows,onExport}:{state:MissionState;navigate:(p:Page)=>void;onWindows:()=>void;onExport:()=>void}){
-  const [search,setSearch]=useState(''),[sort,setSort]=useState('name'),[ascending,setAscending]=useState(true);
-  const m=state.mission,selected=state.sites.find(s=>s.site_id===state.selected),ranking=state.rank(state.selected);
-  const terrainKnown=m.terrain==='unassessed';
-  const passing=terrainKnown?state.matches?.rankings.filter(r=>r.passed)||[]:[];
-  const recommended=terrainKnown?state.matches?.recommended_primary:null;
-  const shown=state.sites.filter(s=>s.name.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>{let diff=0;if(sort==='name')diff=a.name.localeCompare(b.name);else if(sort==='lat')diff=a.lat_deg-b.lat_deg;else if(sort==='lon')diff=a.lon_deg-b.lon_deg;else diff=(state.rank(a.site_id)?.metrics[sort==='sun'?'sun_availability_pct':'joint_availability_pct']||0)-(state.rank(b.site_id)?.metrics[sort==='sun'?'sun_availability_pct':'joint_availability_pct']||0);return ascending?diff:-diff;});
-  const sortBy=(key:string)=>{if(key===sort)setAscending(x=>!x);else{setSort(key);setAscending(true);}};
-  return <div className="page-shell"><PageTitle number="01 / EXPLORE & EVALUATE" title="Mission Planner" description="Define the mission. Find the right place to begin."><button className="button secondary compact" onClick={onExport}><Download size={15}/> Export scenario</button></PageTitle><DataNote/>
-    <div className="planner-layout"><aside className="panel mission-panel"><div className="panel-heading"><div><span className="eyebrow">01 / CONFIGURATION</span><h3>Mission parameters</h3></div><SlidersHorizontal size={18}/></div>
-    <form onSubmit={e=>{e.preventDefault();state.analyze();document.getElementById('analysis-results')?.scrollIntoView({behavior:'smooth',block:'center'});}}>
-      <label className="field">Mission year<select value={m.start.slice(0,4)} onChange={e=>state.update('start',e.target.value+m.start.slice(4))}>{[2027,2028,2029,2030].map(y=><option key={y}>{y}</option>)}</select></label>
-      <label className="field">Mission start<input type="date" required min="2027-01-01" max="2030-12-31" value={m.start} onChange={e=>state.update('start',e.target.value)}/></label>
-      <label className="field">Mission start time (UTC)<input type="time" aria-label="Mission start time UTC" value={(m.utcTime||'00:00').slice(0,5)} onChange={e=>state.update('utcTime',e.target.value)}/></label><div className="field-pair"><Numeric label="Consecutive sunlight" value={m.sunlight} min={0} max={366} onChange={v=>state.update('sunlight',v)} hint="days required"/><Numeric label="Mission duration" value={m.days} min={1} max={366} onChange={v=>state.update('days',v)} hint="Earth days"/></div>
-      <div className="field-pair"><Numeric label="Mast height" value={m.mast} min={.5} max={30} step={.5} onChange={v=>state.update('mast',v)} hint="metres above ground"/><Numeric label="Earth visibility" value={m.earth} min={0} max={100} onChange={v=>state.update('earth',v)} hint="minimum %"/></div>
-      <label className="field">Communication requirement<select value={m.comms?'required':'optional'} onChange={e=>state.update('comms',e.target.value==='required')}><option value="required">Required — direct to Earth</option><option value="optional">Optional — autonomous operations</option></select></label>
-      <label className="field">Terrain safety requirement<select value={m.terrain} onChange={e=>state.update('terrain',e.target.value)}><option value="unassessed">Explore regional terrain (80 m grid)</option><option value="8">Require verified slope ≤ 8°</option><option value="5">Require verified slope ≤ 5°</option></select><small>80 m grid-scale slopes cannot certify lander-scale safety.</small></label>
-      <button className="button primary full" type="submit" disabled={state.busy}>{state.busy?<span className="spinner"/>:<Target size={16}/>} {state.busy?'ANALYZING SITES':'ANALYZE SITES'} <ArrowRight size={16}/></button>
-      <button className="text-link preset" type="button" onClick={()=>{state.setMission({...m,days:14,sunlight:7});state.analyze();}}>Use a 14-day mission window <ArrowUpRight size={13}/></button>
-      <p className="form-note"><Info size={13}/> Long sunlight requirements may return no feasible sites. Results reflect your inputs.</p>
-    </form></aside>
-    <div className="map-column"><LunarMap state={state}/><div className="map-description"><span><i className="signal-dot"/> {state.sites.length} sites in the NASA LOLA catalog</span><span>Click a marker to explore <ArrowUpRight size={12}/></span></div></div></div>
-    {state.error&&<div className="error-message" role="alert">{state.error}<button onClick={state.analyze}>Retry</button></div>}
-    {selected&&<section className="panel selected-analysis" aria-live="polite"><div className="panel-heading"><div><span className="eyebrow">SELECTED LOCATION · RESULTS FOR YOUR MISSION</span><h3>{selected.name}</h3></div><Status value={state.status(selected.site_id)}/></div><div className="selected-analysis-metrics">{[['Sun availability',ranking?ranking.metrics.sun_availability_pct.toFixed(1)+'%':'Calculating…'],['Earth-center visibility',ranking?ranking.metrics.earth_availability_pct.toFixed(1)+'%':'Calculating…'],['Longest continuous sunlight',ranking?(ranking.metrics.longest_sun_window_hours/24).toFixed(2)+' days':'Calculating…'],['Your requirements',m.sunlight+' days sunlight / '+(m.comms?m.earth+'% Earth':'Earth optional')]].map(([label,value])=><div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><p className="chart-caption">{ranking?.explanation||'Waiting for this location’s calculations.'}</p><button className="text-link" onClick={()=>{state.setAsPrimary(selected.site_id);navigate('horizon');}}>Explore this location in 3D <ArrowUpRight size={14}/></button></section>}
-    <section className="results-section" id="analysis-results"><div className="section-heading"><div><span className="eyebrow">02 / MISSION COMPATIBILITY</span><h2>Know your options.</h2></div><span className="connection"><i className="signal-dot"/>{state.busy?'Recalculating mission window…':state.connection}</span></div>
-      <div className="results-counts"><div><span>All catalog locations evaluated</span><strong>{state.matches?.evaluated_count??'—'}<small> / {state.sites.length}</small></strong></div><div><span>Passing constraints</span><strong className="green-text">{state.matches?passing.length:'—'}</strong></div><div><span>{terrainKnown?'Failing constraints':'Lander safety unverified'}</span><strong className="warning-text">{state.matches?(state.matches.evaluated_count-passing.length):'—'}</strong></div><div><span>Recommended primary</span><strong className="site-recommendation">{state.busy?'Computing…':recommended?.name||'No passing recommendation'}</strong></div></div>
-      {state.matches&&!recommended&&<p className="result-explanation"><Info size={15}/>{terrainKnown?'All sites fail at least one requirement, but their measurements differ. The selected-location panel above shows its values and specific reasons; compare the individual rows below.':'Verified terrain data is unavailable. Sites cannot pass your terrain requirement; their safety remains unknown.'}</p>}
-      <div className="backup-strip"><span>PASSING BACKUPS</span>{passing.filter(r=>r.site_id!==recommended?.site_id).slice(0,4).map(r=><button key={r.site_id} onClick={()=>state.setSelected(r.site_id)}><MapPin size={13}/>{r.name}<ChevronRight size={13}/></button>)}{passing.length<2&&<p>Alternative sites will appear here when they meet your requirements.</p>}<button className="text-link" onClick={onWindows}>Find better windows <ArrowUpRight size={14}/></button></div>
-    </section>
-    <div className="sites-detail-layout"><section className="panel site-table" id="candidate-sites"><div className="panel-heading"><div><span className="eyebrow">03 / CANDIDATE CATALOG</span><h3>LOLA analysis locations <span className="count-badge">{state.sites.length}</span></h3></div><span className="data-label">NASA-DERIVED LOCATIONS</span></div><div className="table-toolbar"><label><Search size={15}/><input placeholder="Search landing sites…" value={search} onChange={e=>setSearch(e.target.value)} aria-label="Search landing sites"/></label><span>{shown.length} locations</span></div>
-      <div className="table-scroll"><table><thead><tr>{[['name','Site name'],['lat','Latitude'],['lon','Longitude'],['sun','Sunlight'],['joint','Sun + Earth']].map(([key,label])=><th key={key}><button onClick={()=>sortBy(key)}>{label} {sort===key?(ascending?'↑':'↓'):'↕'}</button></th>)}<th>Terrain</th><th>Feasibility</th><th>Compare</th></tr></thead><tbody>{shown.map((s,i)=><tr key={s.site_id} className={s.site_id===state.selected?'selected-row':''} onClick={()=>state.setSelected(s.site_id)}><td><button className="table-site" onClick={()=>state.setSelected(s.site_id)}><span className="site-number">{String(i+1).padStart(2,'0')}</span><div>{s.name}<small>{s.site_id===state.primary?'PRIMARY SITE':state.backups.includes(s.site_id)?'SELECTED BACKUP':s.region}</small></div></button></td><td>{Math.abs(s.lat_deg).toFixed(2)}° S</td><td>{s.lon_deg.toFixed(2)}° E</td><td>{state.rank(s.site_id)?.metrics.sun_availability_pct.toFixed(1)??'—'}%</td><td>{state.rank(s.site_id)?.metrics.joint_availability_pct.toFixed(1)??'—'}%</td><td><span className="muted">Unknown</span></td><td><Status value={state.status(s.site_id)}/></td><td><button aria-label={`Compare ${s.name}`} disabled={s.site_id===state.primary} title={s.site_id===state.primary?"The primary site is always included in comparison":"Toggle site comparison"} className={`icon-button ${state.ids.includes(s.site_id)?'active':''}`} onClick={e=>{e.stopPropagation();state.toggleCompare(s.site_id);}}>{state.ids.includes(s.site_id)?<Check size={14}/>:<Plus size={14}/>}</button></td></tr>)}</tbody></table>{shown.length===0&&<p className="empty-state">No locations match your search.</p>}</div>
-    </section><aside className="panel site-detail"><div className="panel-heading"><span className="eyebrow">SELECTED LOCATION</span><MapPin size={16}/></div>{selected&&<><h2>{selected.name}</h2><div className="detail-coordinates">{Math.abs(selected.lat_deg).toFixed(2)}° S <span>/</span> {selected.lon_deg.toFixed(2)}° E</div><Status value={state.status(selected.site_id)}/><p>{selected.description}</p><div className="detail-score"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="41"/><circle className="score-arc" cx="50" cy="50" r="41" strokeDasharray={`${(ranking?.score||0)*2.576} 258`}/><text x="50" y="49">{ranking?.score.toFixed(0)??'—'}</text><text className="ring-label" x="50" y="64">/ 100</text></svg><div><h4>Mission compatibility</h4><p>{ranking?'Modeled coverage score':'Run analysis to calculate'}</p><small>Terrain suitability: unknown</small></div></div><dl className="detail-metrics"><div><dt>LOLA elevation</dt><dd>{selected.elevation_m.toLocaleString()} m</dd></div><div><dt>Sun visibility</dt><dd>{ranking?.metrics.sun_availability_pct.toFixed(1)??'—'}%</dd></div><div><dt>Earth visibility</dt><dd>{ranking?.metrics.earth_availability_pct.toFixed(1)??'—'}%</dd></div><div><dt>Continuous sunlight</dt><dd>{ranking?(ranking.metrics.longest_sun_window_hours/24).toFixed(1):'—'} days</dd></div><div><dt>Communication</dt><dd>{!m.comms?'Optional':ranking?(ranking.metrics.earth_availability_pct>=m.earth?'Requirement met':'Below requirement'):'Unevaluated'}</dd></div><div><dt>Backup suitability</dt><dd>{state.status(selected.site_id)==='PASSING'?'Meets constraints':state.status(selected.site_id)==='UNKNOWN'?'Unknown':'Not passing'}</dd></div></dl>
-    {ranking&&<div className="detail-reason">{m.terrain!=='unassessed'?'Terrain safety cannot be verified from the current inputs.':ranking.explanation}</div>}
-    <button className="button primary full compact" disabled={selected.site_id===state.primary} onClick={()=>state.setAsPrimary(selected.site_id)}><Target size={14}/>{selected.site_id===state.primary?'Primary site selected':'Set as Primary Site'}</button><div className="detail-actions"><button className="button secondary compact" disabled={selected.site_id===state.primary} onClick={()=>state.toggleBackup(selected.site_id)}>{state.backups.includes(selected.site_id)?'Remove backup':'Add to Backup Sites'}</button><button className="button secondary compact" disabled={selected.site_id===state.primary} onClick={()=>state.toggleCompare(selected.site_id)}>{selected.site_id===state.primary?'Primary included':state.ids.includes(selected.site_id)?'Remove comparison':'Compare Site'}</button></div><button className="text-link" onClick={()=>{state.setAsPrimary(selected.site_id);navigate('horizon');}}>View Detailed Analysis <ArrowUpRight size={14}/></button></>}</aside></div>
-    <section className="comparison-section"><div className="section-heading"><div><span className="eyebrow">SIDE BY SIDE</span><h2>A broader perspective.</h2></div><span className="muted">Compare up to three locations</span></div><div className="comparison-grid">{state.ids.map(id=>{const site=state.sites.find(s=>s.site_id===id),r=state.rank(id);return <article className="panel comparison-card" key={id}><div className="feature-top"><span className="eyebrow">{id===state.primary?'PRIMARY':'COMPARISON'}</span>{id!==state.primary&&<button aria-label={`Remove ${site?.name} comparison`} className="icon-button" onClick={()=>state.toggleCompare(id)}><X size={14}/></button>}</div><h3>{site?.name}</h3><Status value={state.status(id)}/><div className="comparison-bars">{[['Sunlight',r?.metrics.sun_availability_pct],['Earth visibility',r?.metrics.earth_availability_pct],['Joint coverage',r?.metrics.joint_availability_pct]].map(([label,value])=><div key={label}><span>{label}<strong>{typeof value==='number'?value.toFixed(1)+'%':'—'}</strong></span><div><i style={{width:`${value||0}%`}}/></div></div>)}</div><button className="text-link" onClick={()=>{state.setSelected(id);state.setAsPrimary(id);navigate('horizon');}}>Inspect horizon <ArrowUpRight size={13}/></button></article>;})}</div></section>
-  </div>;
+
+export function Planner({
+  state,
+  navigate,
+  onWindows,
+  onExport,
+  onContingency
+}: {
+  state: MissionState;
+  navigate: (p: Page) => void;
+  onWindows: () => void;
+  onExport: () => void;
+  onContingency?: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'name' | 'lat' | 'lon' | 'sun' | 'joint'>('sun');
+  const [ascending, setAscending] = useState(false);
+  const m = state.mission;
+
+  const getSiteDisplayName = (s:LandingSite)=>s.name;
+  const getSunDays=(s:LandingSite)=>state.rank(s.site_id)?.metrics.longest_sun_window_hours==null?null:state.rank(s.site_id)!.metrics.longest_sun_window_hours/24;
+  const getJointDays=(s:LandingSite)=>state.rank(s.site_id)?.metrics.joint_availability_pct==null?null:state.rank(s.site_id)!.metrics.joint_availability_pct/100*m.days;
+  const daysLabel=(n:number|null)=>n==null?'Pending':n.toFixed(2)+' days';
+  const filteredSites = state.sites.filter(s => {
+    const disp = getSiteDisplayName(s).toLowerCase();
+    const orig = s.name.toLowerCase();
+    const query = search.toLowerCase();
+    return disp.includes(query) || orig.includes(query);
+  });
+
+  const sortedSites = [...filteredSites].sort((a, b) => {
+    let diff = 0;
+    if (sort === 'name') diff = getSiteDisplayName(a).localeCompare(getSiteDisplayName(b));
+    else if (sort === 'lat') diff = a.lat_deg - b.lat_deg;
+    else if (sort === 'lon') diff = a.lon_deg - b.lon_deg;
+    else if (sort === 'sun') diff = (getSunDays(a)??-1) - (getSunDays(b)??-1);
+    else if (sort === 'joint') diff = (getJointDays(a)??-1) - (getJointDays(b)??-1);
+    return ascending ? diff : -diff;
+  });
+
+  const sortBy = (key: 'name' | 'lat' | 'lon' | 'sun' | 'joint') => {
+    if (key === sort) {
+      setAscending(x => !x);
+    } else {
+      setSort(key);
+      setAscending(false);
+    }
+  };
+
+  const handleSelectSite = (siteId: string) => {
+    state.setAsPrimary(siteId);
+    state.setSelected(siteId);
+  };
+
+  const handleInspectSite = (siteId: string) => {
+    state.setAsPrimary(siteId);
+    state.setSelected(siteId);
+    navigate('horizon');
+  };
+
+  return (
+    <div className="planner-page-layout">
+
+      {/* Main Workspace Column */}
+      <div className="planner-main-column">
+        {/* Header */}
+        <div className="planner-view-header">
+          <h1>Mission Planner</h1>
+          <p>Select a landing site and mission constraints to evaluate feasibility and find automatic backup candidates.</p>
+        </div>
+
+        {/* Top 2-Column Grid */}
+        <div className="planner-top-row">
+          {/* Left Block: Mission Parameters */}
+          <div className="mission-parameters-card">
+            <div className="card-top-title">
+              <SlidersHorizontal size={18} />
+              <span>Mission Parameters</span>
+            </div>
+
+            <label className="param-field-row"><span className="param-label">Mission start (UTC)</span><div className="param-input-box"><input aria-label="Mission start date" type="date" value={m.start} min="2025-01-01" max="2032-12-31" onChange={e=>{if(e.target.value)state.update('start',e.target.value);}}/></div></label>
+            <label className="param-field-row"><span className="param-label">Start time (UTC)</span><div className="param-input-box"><input aria-label="Mission start time" type="time" step="1" value={m.utcTime||'00:00:00'} onChange={e=>state.update('utcTime',e.target.value)}/></div></label>
+            <label className="param-field-row"><span className="param-label">Mission duration (days)</span><div className="param-input-box"><input aria-label="Mission duration" type="number" min="1" max="366" step="0.1" value={m.days} onChange={e=>{if(e.target.validity.valid&&Number.isFinite(e.target.valueAsNumber))state.update('days',e.target.valueAsNumber);}}/></div></label>
+            <label className="param-field-row"><span className="param-label">Consecutive sunlight (days)</span><div className="param-input-box"><input aria-label="Consecutive sunlight" type="number" min="0" max="366" step="0.1" value={m.sunlight} onChange={e=>{if(e.target.validity.valid&&Number.isFinite(e.target.valueAsNumber))state.update('sunlight',e.target.valueAsNumber);}}/></div></label>
+            <label className="param-field-row"><span className="param-label">Minimum Earth visibility (%)</span><div className="param-input-box"><input aria-label="Minimum Earth visibility" type="number" min="0" max="100" value={m.earth} onChange={e=>{if(e.target.validity.valid&&Number.isFinite(e.target.valueAsNumber))state.update('earth',e.target.valueAsNumber);}}/></div></label>
+            <label className="param-field-row"><span className="param-label">Direct-to-Earth link</span><div className="param-input-box"><select aria-label="Communication requirement" value={String(m.comms)} onChange={e=>state.update('comms',e.target.value==='true')}><option value="true">Required</option><option value="false">Optional</option></select></div></label>
+            {/* Lander Mast Height */}
+            <div className="param-field-row">
+              <span className="param-label">Lander Mast Height</span>
+              <div className="mast-input-group">
+                <div className="param-input-box">
+                  <Antenna size={14} className="param-icon" />
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    max="30"
+                    value={m.mast}
+                    onChange={e => {if(Number.isFinite(e.target.valueAsNumber)&&e.target.validity.valid)state.update('mast', e.target.valueAsNumber);}}
+                    className="param-num-input"
+                  />
+                  <span className="unit-label">m</span>
+                </div>
+                <button
+                  type="button"
+                  className="mast-info-btn"
+                  title="Mast height above ground enables line-of-sight elevation over local terrain features."
+                  onClick={()=>navigate('horizon')}
+                >
+                  <Info size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Analyze Sites CTA */}
+            <button
+              className="analyze-cta-btn"
+              onClick={() => state.analyze()}
+              disabled={state.busy}
+            >
+              {state.busy ? (
+                <>
+                  <span className="spinner" />
+                  <span>Analyzing Sites...</span>
+                </>
+              ) : (
+                <>
+                  <span>Analyze Sites</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Right Block: Circular Polar Map */}
+          <div className="polar-atlas-card">
+            <LunarMap state={state} />
+          </div>
+        </div>
+
+        <MissionFeedback state={state}/>
+        <div className="integration-actions"><button className="button secondary compact" onClick={onWindows}>Find mission windows</button><button className="button secondary compact" onClick={onContingency}>Prepare backups</button><button className="button secondary compact" onClick={onExport} disabled={state.chartBusy||!state.evaluation}>Export analysis</button><button className="button primary compact" onClick={()=>navigate('horizon')}>Explore selected site in 3D</button></div>
+        {/* Measured analysis locations */}
+        <div className="candidate-sites-card" id="candidate-sites">
+          <div className="candidate-table-header">
+            <div className="table-title">
+              <Layers size={18} className="table-layers-icon" />
+              <span>LOLA Analysis Locations ({state.sites.length})</span>
+            </div>
+            <div className="table-search-box">
+              <Search size={14} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search LOLA location"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="search-input"
+              />
+            </div>
+          </div>
+
+          <div className="candidate-table-wrapper">
+            <table className="candidate-data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '40px' }}></th>
+                  <th onClick={() => sortBy('name')} className="sortable-th">
+                    Site {sort === 'name' ? (ascending ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => sortBy('lat')} className="sortable-th">
+                    Latitude {sort === 'lat' ? (ascending ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => sortBy('lon')} className="sortable-th">
+                    Longitude {sort === 'lon' ? (ascending ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => sortBy('sun')} className="sortable-th">
+                    Consecutive Sunlight {sort === 'sun' ? (ascending ? '↑' : '↓') : ''}
+                  </th>
+                  <th onClick={() => sortBy('joint')} className="sortable-th">
+                    Sun + Earth Visibility {sort === 'joint' ? (ascending ? '↑' : '↓') : ''}
+                  </th>
+                  <th className="status-th">
+                    <span>Status</span>
+                    <span className="info-th" title="Evaluation status under configured mission constraints.">
+                      <Info size={12} />
+                    </span>
+                  </th>
+                  <th style={{ width: '44px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedSites.map(s => {
+                  const isPrimary = s.site_id === state.primary;
+                  const ranking = state.rank(s.site_id);
+                  const isPassingBackup = state.backups.includes(s.site_id) && ranking?.passed;
+                  const isFailingBackup = state.backups.includes(s.site_id) && ranking && !ranking.passed;
+
+                  return (
+                    <tr
+                      key={s.site_id}
+                      className={`table-site-row ${isPrimary ? 'row-selected' : ''}`}
+                      onClick={() => handleSelectSite(s.site_id)}
+                    >
+                      <td>
+                        <div className={`custom-radio ${isPrimary ? 'checked' : ''}`}>
+                          {isPrimary && <div className="radio-dot" />}
+                        </div>
+                      </td>
+                      <td className="site-name-cell">
+                        <strong>{getSiteDisplayName(s)}</strong><label className="compare-location" onClick={e=>e.stopPropagation()}><input type="checkbox" aria-label={`Compare ${s.name}`} checked={state.ids.includes(s.site_id)} disabled={isPrimary} onChange={()=>state.toggleCompare(s.site_id)}/> Compare</label>
+                      </td>
+                      <td>{Math.abs(s.lat_deg).toFixed(1)}° S</td>
+                      <td>{s.lon_deg >= 0 ? s.lon_deg.toFixed(1) : (360 + s.lon_deg).toFixed(1)}° E</td>
+                      <td>{daysLabel(getSunDays(s))}</td>
+                      <td>{daysLabel(getJointDays(s))}</td>
+                      <td>
+                        {isPrimary ? (
+                          <span className="badge-primary">Primary · {state.status(s.site_id)}</span>
+                        ) : isPassingBackup ? (
+                          <span className="badge-passing">Backup (Passing)</span>
+                        ) : isFailingBackup ? (
+                          <span className="badge-failing">Backup (Fail)</span>
+                        ) : (
+                          <span className={ranking?(ranking.passed?'badge-passing':'badge-failing'):'badge-candidate'}>{state.status(s.site_id)}</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className="row-chevron-btn"
+                          title={`Inspect ${s.name} in Horizon Simulator`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInspectSite(s.site_id);
+                          }}
+                          aria-label={`Inspect ${s.name} in Horizon Simulator`}
+                        >
+                          <ChevronRight size={17} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export function Horizon({state,onPower,onDispersion,onMast}:{state:MissionState;onPower:()=>void;onDispersion:()=>void;onMast:()=>void}){
-  return <div className="page-shell"><PageTitle number="02 / SURFACE & SKY" title="Horizon Simulator" description="Explore measured lunar terrain. Follow the calculated Sun and Earth."/><DataNote/>
-    <div className="sim-controls panel"><label className="field">Mission-period start<input type="date" aria-label="Mission-period start" value={state.mission.start} onChange={e=>state.update('start',e.target.value)}/></label><Numeric label="Mission-period duration (days)" value={state.mission.days} min={1} max={366} onChange={v=>state.update('days',v)}/><span className="chart-caption">Period metrics use this full window. The scene UTC is independently selectable below.</span></div>
-    <React.Suspense fallback={<div className="panel empty-state">Loading the measured terrain explorer…</div>}><SurfaceExplorer state={state} onPower={onPower} onDispersion={onDispersion} onMast={onMast}/></React.Suspense>
-  </div>;
+export function Horizon({
+  state,
+  navigate,
+  onPower,
+  onDispersion,
+  onMast,
+  onContingency
+}: {
+  state: MissionState;
+  navigate?: (p: Page) => void;
+  onPower?: () => void;
+  onDispersion?: () => void;
+  onMast: () => void;
+  onContingency?: () => void;
+}) {
+  const [viewMode, setViewMode] = useState<'horizon' | '3d'>('3d');
+  const [compareSiteId, setCompareSiteId] = useState<string>(state.compare.find(id=>id!==state.primary)||'lola-sp-002');
+  const [tableTab, setTableTab] = useState<'primary' | 'backup' | 'difference'>('primary');
+  const [index, setIndex] = useState(0);
+
+  useEffect(()=>{if(compareSiteId===state.primary){setCompareSiteId(state.sites.find(s=>s.site_id!==state.primary)?.site_id||'');return;}if(compareSiteId&&!state.ids.includes(compareSiteId))state.toggleCompare(compareSiteId);},[compareSiteId,state.primary,state.ids.join(','),state.sites]);
+  const data = state.chartBusy?undefined:state.evaluation?.evaluated_sites[state.primary];
+  const step = Math.min(index, Math.max(0, (data?.timestamps.length || 1) - 1));
+
+  const getSiteDisplayName=(id:string)=>state.sites.find(s=>s.site_id===id)?.name||id;
+  const getSiteMetrics=(id:string)=>{
+    const site=state.sites.find(s=>s.site_id===id), d=state.chartBusy?undefined:state.evaluation?.evaluated_sites[id], r=state.rank(id);
+    const ext=(values:(number|null)[]|undefined,min=false)=>{const v=(values||[]).filter((v):v is number=>v!=null&&Number.isFinite(v));return v.length?(min?Math.min(...v):Math.max(...v)):null;};
+    const fmt=(v:number|null)=>v==null?'Pending':v.toFixed(2)+'°';
+    const max=ext(d?.ephemeris.sun_elevation),min=ext(d?.ephemeris.sun_elevation,true),emin=ext(d?.ephemeris.earth_elevation,true),emax=ext(d?.ephemeris.earth_elevation),hmin=ext(d?.horizon_360,true);
+    return {name:getSiteDisplayName(id),coords:site?`${site.lat_deg.toFixed(3)}°, ${site.lon_deg.toFixed(3)}°E`:'Pending',maxSun:fmt(max),minSun:fmt(min),earthRange:fmt(emin)+' to '+fmt(emax),horizonMin:fmt(hmin),sunDays:r?(r.metrics.longest_sun_window_hours/24).toFixed(2):'Pending',jointDays:r?(r.metrics.joint_availability_pct/100*state.mission.days).toFixed(2):'Pending',maxElevationRange:fmt(min)+' to '+fmt(max),raw:[max,min,emin,emax,hmin]};
+  };
+  const primaryMetrics = getSiteMetrics(state.primary);
+  const compareMetrics = getSiteMetrics(compareSiteId);
+
+  const formatDateDisplay = (isoDate: string) => {
+    try {
+      const d = new Date(isoDate + 'T00:00:00Z');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const handleNav = (p: Page) => {
+    if (navigate) navigate(p);
+    else location.hash = '/' + p;
+  };
+
+  return (
+    <div className="horizon-page-layout">
+      {/* Left Navigation Sidebar */}
+
+
+      {/* Main Workspace Column */}
+      <div className="horizon-main-column">
+        {/* Top Header */}
+        <div className="horizon-header-bar">
+          <div className="header-title-group">
+            <Mountain size={28} className="horizon-mountain-icon" />
+            <div>
+              <h1>360° Horizon Simulator</h1>
+              <p>Visualize the local terrain horizon and adaptive Sun–Earth trajectories for the selected site and date.</p>
+            </div>
+          </div>
+
+          {/* View Mode Toggle: Horizon View | 3D Terrain */}
+          <div className="view-mode-pill">
+            <button
+              className={`mode-btn ${viewMode === 'horizon' ? 'active' : ''}`}
+              onClick={() => setViewMode('horizon')}
+            >
+              <Mountain size={14} />
+              <span>Horizon View</span>
+            </button>
+            <button
+              className={`mode-btn ${viewMode === '3d' ? 'active' : ''}`}
+              onClick={() => setViewMode('3d')}
+            >
+              <Box size={14} />
+              <span>3D Moon & Surface</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Configuration / Filter Bar */}
+        <div className="horizon-filter-bar">
+          {/* Primary Site */}
+          <div className="filter-group">
+            <span className="filter-label">Primary Site</span>
+            <div className="filter-select-wrapper">
+              <select
+                value={state.primary}
+                onChange={e => state.setAsPrimary(e.target.value)}
+                className="filter-select"
+              >
+                {state.sites.map(s => (
+                  <option key={s.site_id} value={s.site_id}>
+                    {getSiteDisplayName(s.site_id)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Compare With */}
+          <div className="filter-group">
+            <span className="filter-label">Compare With</span>
+            <div className="filter-select-wrapper">
+              <select
+                aria-label="Compare horizon location" value={compareSiteId}
+                onChange={e => setCompareSiteId(e.target.value)}
+                className="filter-select"
+              >
+                {state.sites.filter(s => s.site_id !== state.primary).map(s => (
+                  <option key={s.site_id} value={s.site_id}>
+                    {getSiteDisplayName(s.site_id)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Date Picker */}
+          <div className="filter-group">
+            <span className="filter-label">Date</span>
+            <div className="filter-date-wrapper">
+              <span className="date-display-text">{formatDateDisplay(state.mission.start)}</span>
+              <Calendar size={14} className="calendar-icon" />
+              <input
+                type="date"
+                value={state.mission.start}
+                onChange={e => {if(e.target.value)state.update('start', e.target.value);}}
+                className="hidden-date-input"
+              />
+            </div>
+          </div>
+
+          {/* Mast Height */}
+          <div className="filter-group">
+            <span className="filter-label">Mast Height</span>
+            <div className="mast-filter-wrapper">
+              <div className="filter-select-wrapper">
+                <select
+                  value={state.mission.mast}
+                  onChange={e => state.update('mast', Number(e.target.value))}
+                  className="filter-select"
+                >
+                  {Array.from(new Set([0.5,1,1.5,2,2.5,3,5,10,20,30,state.mission.mast])).sort((a,b)=>a-b).map(h => (
+                    <option key={h} value={h}>{h.toFixed(1)} m</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                className="mast-info-button"
+                onClick={onMast}
+                title="Open Mast Sensitivity Sweep"
+              >
+                <Info size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Middle Two-Column Section */}
+        <MissionFeedback state={state} compact/><div className={`horizon-middle-row ${viewMode==='3d'?'surface-expanded':''}`}>
+          {/* Main Graph Card */}
+          <div className="horizon-graph-card">
+            {viewMode === 'horizon' ? (
+              <HorizonGraph
+                data={data}
+                siteId={state.primary}
+                stepIndex={step}
+                missionDate={state.mission.start}
+                onSeekStep={setIndex}
+              />
+            ) : (
+              <Suspense fallback={<p role="status">Loading 3D explorer…</p>}><SurfaceExplorer state={state} onPower={onPower||(()=>{})} onDispersion={onDispersion||(()=>{})} onMast={onMast}/></Suspense>
+            )}
+          </div>
+
+          {/* Right Metrics Sidebar (3 Cards) */}
+          <div className="horizon-metrics-sidebar">
+            {/* Card 1: Site Overview */}
+            <div className="overview-card">
+              <div className="card-header">
+                <MapPin size={14} className="icon-amber" />
+                <span>Site Overview</span>
+              </div>
+              <div className="overview-content">
+                <div>
+                  <strong className="site-title">{primaryMetrics.name}</strong>
+                  <div className="site-coords">{primaryMetrics.coords}</div>
+                </div>
+                <MapPin size={38} className="gold-icon"/>
+              </div>
+            </div>
+
+            {/* Card 2: Visibility Summary */}
+            <div className="overview-card">
+              <div className="card-header">
+                <Sun size={14} className="icon-amber" />
+                <span>Visibility Summary (Mission Window)</span>
+              </div>
+              <div className="metric-row-list">
+                <div className="metric-row">
+                  <div className="metric-label">
+                    <Sun size={13} className="text-amber-400" />
+                    <span>Consecutive Sunlight</span>
+                  </div>
+                  <strong className="metric-value">{primaryMetrics.sunDays} days</strong>
+                </div>
+                <div className="metric-row">
+                  <div className="metric-label">
+                    <Radio size={13} className="text-cyan-400" />
+                    <span>Sun + Earth Visibility</span>
+                  </div>
+                  <strong className="metric-value">{primaryMetrics.jointDays} days</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Solar Elevation Distribution */}
+            <div className="overview-card">
+              <div className="card-header">
+                <BarChart3 size={14} className="icon-amber" />
+                <span>Solar Elevation Distribution</span>
+              </div>
+              <div className="chart-body">
+                <SolarElevationDistribution data={data} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Two-Column Section */}
+        <div className="horizon-bottom-row">
+          {/* Bottom-Left: Site Comparison Table */}
+          <div className="comparison-table-card">
+            {/* Table Tabs */}
+            <div className="table-tabs-bar">
+              <button
+                className={`tab-btn ${tableTab === 'primary' ? 'active' : ''}`}
+                onClick={() => setTableTab('primary')}
+              >
+                Primary Site
+              </button>
+              <button
+                className={`tab-btn ${tableTab === 'backup' ? 'active' : ''}`}
+                onClick={() => setTableTab('backup')}
+              >
+                Backup Site
+              </button>
+              <button
+                className={`tab-btn ${tableTab === 'difference' ? 'active' : ''}`}
+                onClick={() => setTableTab('difference')}
+              >
+                Difference
+              </button>
+            </div>
+
+            {/* Comparison Data Table */}
+            <table className="comparison-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '36px' }}></th>
+                  <th>
+                    <div className="th-with-icon">
+                      <Sun size={12} />
+                      <span>Site</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="th-with-icon">
+                      <Sun size={12} className="text-amber-400" />
+                      <span>Max Sun Elev.</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="th-with-icon">
+                      <Sun size={12} className="text-orange-400" />
+                      <span>Min Sun Elev.</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="th-with-icon">
+                      <Globe2 size={12} className="text-cyan-400" />
+                      <span>Earth Elev. (range)</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="th-with-icon">
+                      <Mountain size={12} />
+                      <span>Horizon Min.</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Primary Site Row */}
+                <tr
+                  className={`site-row ${tableTab === 'primary' ? 'highlighted' : ''}`}
+                  onClick={() => {
+                    setTableTab('primary');
+                    state.setAsPrimary(state.primary);
+                  }}
+                >
+                  <td>
+                    <div className={`radio-circle ${tableTab === 'primary' ? 'checked' : ''}`}>
+                      {tableTab === 'primary' && <div className="dot" />}
+                    </div>
+                  </td>
+                  <td><strong>{primaryMetrics.name}</strong></td>
+                  <td>{primaryMetrics.maxSun}</td>
+                  <td>{primaryMetrics.minSun}</td>
+                  <td>{primaryMetrics.earthRange}</td>
+                  <td>{primaryMetrics.horizonMin}</td>
+                </tr>
+
+                {/* Compare / Backup Site Row */}
+                <tr
+                  className={`site-row ${tableTab === 'backup' ? 'highlighted' : ''}`}
+                  onClick={() => {
+                    setTableTab('backup');
+                  }}
+                >
+                  <td>
+                    <div className={`radio-circle ${tableTab === 'backup' ? 'checked' : ''}`}>
+                      {tableTab === 'backup' && <div className="dot" />}
+                    </div>
+                  </td>
+                  <td><strong>{compareMetrics.name}</strong></td>
+                  <td>{compareMetrics.maxSun}</td>
+                  <td>{compareMetrics.minSun}</td>
+                  <td>{compareMetrics.earthRange}</td>
+                  <td>{compareMetrics.horizonMin}</td>
+                </tr>
+
+                {/* Difference Row (When Difference Tab Active) */}
+                {tableTab === 'difference' && (
+                  <tr className="site-row diff-row">
+                    <td>Δ</td>
+                    <td><strong className="text-amber-400">Difference (Primary − Backup)</strong></td>
+                    {[0,1,2,4].map(i=><td key={i}>{primaryMetrics.raw[i]==null||compareMetrics.raw[i]==null?'Pending':(primaryMetrics.raw[i]!-compareMetrics.raw[i]!).toFixed(2)+'°'+(i===2&&primaryMetrics.raw[3]!=null&&compareMetrics.raw[3]!=null?' / '+(primaryMetrics.raw[3]!-compareMetrics.raw[3]!).toFixed(2)+'°':'')}</td>)}
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Bottom-Right: Key Insights */}
+          <div className="insights-card">
+            <div className="card-header">
+              <Lightbulb size={16} className="icon-amber" />
+              <span>Key Insights</span>
+            </div>
+            <div className="insights-list">
+              <div className="insight-item">
+                <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+                <span>Computed solar elevation range: {primaryMetrics.maxElevationRange}.</span>
+              </div>
+              <div className="insight-item">
+                <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+                <span>Sun and Earth simultaneously available for {primaryMetrics.jointDays} total days.</span>
+              </div>
+              <div className="insight-item">
+                <Info size={16} className="text-amber-400 flex-shrink-0" />
+                <span>{state.rank(state.primary)?.explanation||'Waiting for the current mission evaluation.'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 type Phase={name:string;start:string;days:number;status:string};
 const phaseNames=['Mission Configuration','Site Evaluation','Primary Site Selection','Backup Site Selection','Launch Window Preparation','Lunar Transfer','Landing Operations','Surface Mission'];
-export function Timeline({state}:{state:MissionState}){
-  const makePhases=()=>{let offset=-30;return phaseNames.map((name,i)=>{const start=new Date(new Date(state.mission.start).getTime()+offset*86400000).toISOString().slice(0,10);const days=[5,5,3,3,9,4,1,state.mission.days][i];offset+=days;return {name,start,days,status:i===0?'In progress':'Planned'};});};
-  const [phases,setPhases]=useStored<Phase[]>('lunascope.phases.v3',makePhases());
-  const [notice,setNotice]=useState('');
-  const start=Math.min(...phases.map(p=>new Date(p.start).getTime())),end=Math.max(...phases.map(p=>new Date(p.start).getTime()+p.days*86400000));
-  const span=Math.max(86400000,end-start);
-  const change=(i:number,patch:Partial<Phase>)=>setPhases(prev=>prev.map((p,j)=>i===j?{...p,...patch}:p));
-  function download(){const blob=new Blob([JSON.stringify({mission:state.mission,phases},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='lunascope-mission-timeline.json';a.click();URL.revokeObjectURL(url);}
-  return <div className="page-shell"><PageTitle number="03 / PLAN THE JOURNEY" title="Mission Timeline" description="One mission. Every step considered."><button className="button secondary compact" onClick={download}><Download size={15}/> Export schedule</button></PageTitle><DataNote/><div className="timeline-summary"><div><CalendarDays size={20}/><span>Schedule begins<strong>{new Date(start).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})}</strong></span></div><div><Clock size={20}/><span>Planned duration<strong>{Math.round(span/86400000)} Earth days</strong></span></div><div><Target size={20}/><span>Mission phases<strong>{phases.length} connected steps</strong></span></div><button className="text-link" onClick={()=>{setPhases(makePhases());setNotice('Schedule aligned to the current mission start and duration.');}}>Align with current mission <RotateCcw size={14}/></button></div>{notice&&<p role="status" className="result-explanation">{notice}</p>}
-    <section className="panel gantt-panel"><div className="panel-heading"><div><span className="eyebrow">MISSION ROADMAP</span><h3>From first question to first step.</h3></div><span className="muted">Edit dates and durations directly below</span></div><div className="gantt-scroll"><div className="gantt-labels"><span>MISSION PHASE</span><div>{[0,.25,.5,.75,1].map(p=><span key={p}>{new Date(start+span*p).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'})}</span>)}</div></div>{phases.map((p,i)=><div className="gantt-row" key={p.name}><div><span>{String(i+1).padStart(2,'0')}</span>{p.name}</div><div className="gantt-track"><i style={{left:`${(new Date(p.start).getTime()-start)/span*100}%`,width:`${Math.max(.8,p.days*86400000/span*100)}%`}} title={`${p.name}: ${p.days} days`}>{p.days>=5?`${p.days}d`:''}</i></div></div>)}</div></section>
-    <section className="panel phase-table"><div className="panel-heading"><div><span className="eyebrow">A LIVING PLAN</span><h3>Refine the details.</h3></div><span className="data-label">PLANNING SCHEDULE · NOT FLIGHT DYNAMICS</span></div><div className="table-scroll"><table><thead><tr><th>Phase</th><th>Planned start</th><th>Duration (days)</th><th>Planned end</th><th>Status</th></tr></thead><tbody>{phases.map((p,i)=><tr key={p.name}><td><span className="site-number">{String(i+1).padStart(2,'0')}</span>{p.name}</td><td><input aria-label={`${p.name} start`} type="date" value={p.start} onChange={e=>{if(e.target.value)change(i,{start:e.target.value});}}/></td><td><input aria-label={`${p.name} duration`} type="number" min="1" max="366" value={p.days} onChange={e=>{const days=e.target.valueAsNumber;if(Number.isFinite(days)&&days>=1&&days<=366)change(i,{days});}}/></td><td>{new Date(new Date(p.start).getTime()+p.days*86400000).toISOString().slice(0,10)}</td><td><select aria-label={`${p.name} status`} value={p.status} onChange={e=>change(i,{status:e.target.value})}><option>Planned</option><option>In progress</option><option>Complete</option><option>On hold</option></select></td></tr>)}</tbody></table></div></section>
-  </div>;
+export function Timeline({
+  state,
+  navigate,
+  onContingency
+}: {
+  state: MissionState;
+  navigate?: (p: Page) => void;
+  onContingency?: () => void;
+}) {
+  return <TimelineInteractive state={state} navigate={navigate} onContingency={onContingency} />;
 }
 
 export function Educator({navigate}:{navigate:(p:Page)=>void}){
-  const [elevation,setElevation]=useState(2),[mast,setMast]=useState(2),[earth,setEarth]=useState(true);
-  const horizon=2.5-mast*.12,u=(elevation-horizon)/.266;
-  const fraction=u>=1?1:u<=-1?0:(Math.acos(-u)+u*Math.sqrt(1-u*u))/Math.PI;
-  return <div className="page-shell"><PageTitle number="04 / A DIFFERENT PERSPECTIVE" title="A little lunar understanding" description="The science behind the settings, one small step at a time."><button className="button secondary compact" onClick={()=>navigate('planner')}>Standard Mode <ArrowRight size={15}/></button></PageTitle>
-    <div className="educator-layout"><div><span className="eyebrow">WHY THE SOUTH POLE?</span><h2>At the edge<br/>of light and shadow.</h2><p>The Sun stays low near the Moon’s poles. A small ridge can hide it, while a nearby high point stays illuminated. Those differences shape how a mission finds power, communicates and prepares a backup.</p><p>Change the Sun angle and mast height in this teaching diagram. Watch the exposed solar disk change as the ridge clears.</p><span className="data-label">CONCEPT DIAGRAM · NOT A DATASET</span></div><section className="panel teaching-panel"><svg viewBox="0 0 620 290" role="img" aria-label="Interactive diagram showing solar clearance above an illustrative ridge"><defs><linearGradient id="lesson-sky" x2="0" y2="1"><stop stopColor="#19313e"/><stop offset="1" stopColor="#101722"/></linearGradient></defs><rect width="620" height="290" fill="url(#lesson-sky)"/><circle cx="470" cy={170-elevation*13} r="17" fill="#d8b36a"/><path d="M0 245L90 228L180 238L290 120L350 130L430 222L525 190L620 234V290H0Z" fill="#3a4146"/><path d={`M130 232V${230-mast*3}M118 ${230-mast*3}h24`} stroke="#63c9c0" strokeWidth="3"/><path d={`M130 ${230-mast*3}L470 ${170-elevation*13}`} stroke="#d8b36a" strokeDasharray="5 6" opacity=".7"/><text x="32" y="35" fill="#a6afbc" fontSize="10" letterSpacing="2">ILLUSTRATIVE RIDGE CLEARANCE</text><text x="350" y="267" fill="#a6afbc" fontSize="11">A few metres can change the view.</text></svg><div className="lesson-controls"><label className="field">Sun elevation <strong>{elevation.toFixed(1)}°</strong><input aria-label="Teaching Sun elevation" type="range" min="-3" max="8" step=".1" value={elevation} onChange={e=>setElevation(Number(e.target.value))}/></label><label className="field">Mast height <strong>{mast} m</strong><input aria-label="Teaching mast height" type="range" min="1" max="20" value={mast} onChange={e=>setMast(Number(e.target.value))}/></label><div className="lesson-result"><Sun size={18}/><strong>{(fraction*100).toFixed(0)}%</strong><span>solar disk exposed</span></div></div></section></div>
-    <div className="lesson-grid">{[{icon:Sun,title:'Why does sunlight matter?',body:'Solar panels turn sunlight into electrical power. When terrain blocks the Sun, batteries supply the load. Longer shadows need more stored energy.'},{icon:Radio,title:'Why does Earth visibility matter?',body:'A direct-to-Earth radio link needs a clear view toward Earth. Terrain can block that direction even when the solar panels are in sunlight.'},{icon:ShieldCheck,title:'What makes a site suitable?',body:'A mission needs a balance of illumination, communications, terrain and science access. A bright location can still have unsafe slopes or rocks.'},{icon:MapPin,title:'Why prepare a backup?',body:'A shift in dates or touchdown location can change conditions. A passing backup gives planners another place to consider under the same mission requirements.'}].map(l=><article key={l.title} className="panel lesson-card"><l.icon size={22}/><h3>{l.title}</h3><p>{l.body}</p></article>)}</div>
-    <section className="panel communication-lesson"><div><span className="eyebrow">TRY AN AUTONOMOUS DAY</span><h3>Sunlight and contact are different.</h3><p>Switch the Earth link to see how a sunlit mission’s operating state changes.</p><button className="button secondary compact" onClick={()=>setEarth(v=>!v)}><Radio size={15}/> {earth?'Hide Earth link':'Restore Earth link'}</button></div><div className="lesson-state"><Sun size={26}/><span className="lesson-dashes"/><Target size={30}/><span className={`lesson-dashes ${earth?'':'broken'}`}/><Radio size={26}/><strong>{earth?'Nominal Science':'Autonomous Day'}</strong><p>{earth?'Solar generation and a geometric Earth link are available.':'Solar generation continues; data waits for contact.'}</p></div></section>
-  </div>;
+  return <LearnInteractive navigate={navigate} />;
 }
 
-export function Sources(){
-  const [data,setData]=useState<any>(null),[error,setError]=useState('');
-  useEffect(()=>{fetch('/api/data/provenance').then(async r=>{const body=await r.json();if(!r.ok)throw new Error(body.detail);setData(body);}).catch(e=>setError(String(e)));},[]);
-  const sources=[
-    {name:'LOLA polar digital elevation model',org:'NASA LRO / LOLA / PDS',provides:'Measured lunar heights relative to the 1,737.4 km reference sphere, gridded at 80 metres per pixel.',usage:'Integrated. The published LDEM_80S_80M V2.1 raster supplies point elevations, spherical terrain horizons, location selection and the relief map.',url:'https://imbrium.mit.edu/BROWSE/LOLA_GDR/POLAR/SOUTH_POLE/',status:'INTEGRATED'},
-    {name:'DE421 planetary ephemerides',org:'NASA / JPL / NAIF',provides:'Sun, Earth and Moon positions from the published JPL planetary ephemeris.',usage:'Integrated through SPICE. Sun and Earth positions, distances and local directions are computed for the requested mission times.',url:'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/a_old_versions/',status:'INTEGRATED'},
-    {name:'DE421 lunar orientation',org:'NASA / JPL / NAIF',provides:'Binary lunar orientation and frame definitions for the Moon Mean Earth / Polar Axis frame.',usage:'Integrated. MOON_ME_DE421 matches the published LOLA coordinate frame. The computation includes light-time and stellar-aberration correction.',url:'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/',status:'INTEGRATED'},
-    {name:'NAIF time and constants kernels',org:'NASA / JPL / NAIF',provides:'Leap seconds and planetary reference constants for SPICE time and geometry calculations.',usage:'Integrated. UTC mission dates are converted with naif0012.tls; physical constants are supplied by the accompanying PCK.',url:'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/',status:'INTEGRATED'},
-    {name:'Artemis candidate-region update',org:'NASA / October 2024',provides:'The published set of nine candidate regions announced by NASA in 2024.',usage:'Reference context. LunaScope analysis points are selected from real LOLA raster cells and are not presented as NASA-approved landing sites.',url:'https://www.nasa.gov/news-release/nasa-provides-update-on-artemis-iii-moon-landing-regions/',status:'REFERENCE'},
-    {name:'NASA International Space Apps Challenge',org:'NASA SPACE APPS',provides:'A global challenge using open data to address Earth and space problems.',usage:'LunaScope is your independent Space Apps project. Official data sources do not imply NASA approval or flight certification.',url:'https://www.spaceappschallenge.org/',status:'PROJECT CONTEXT'}];
-  return <div className="page-shell"><PageTitle number="05 / KNOW WHAT YOU KNOW" title="Data & Sources" description="Official inputs. Traceable calculations. A clear view of the limits."/><DataNote/>
-    <section className="source-intro panel"><div><span className="eyebrow">BUILT FOR NASA SPACE APPS</span><h2>Real data.<br/>A traceable foundation.</h2></div><p>LunaScope uses official NASA LRO/LOLA terrain and NASA/JPL SPICE kernels. Scientific measurements are not replaced with synthetic values. The site catalog is reproducibly derived from actual raster cells; power hardware and mission requirements remain your assumptions.</p></section>
-    {error&&<p className="error-message" role="alert">{error}</p>}
-    <ValidationPanel/><div className="source-grid">{sources.map((s,i)=><article className="panel source-card" key={s.name}><div className="feature-top"><span className="source-index">0{i+1}</span><span className="data-label">{s.status}</span></div><span className="eyebrow">{s.org}</span><h3>{s.name}</h3><p>{s.provides}</p><div className="source-usage"><strong>How it is used</strong><p>{s.usage}</p></div><a className="text-link" href={s.url} target="_blank" rel="noreferrer">View official source <ExternalLink size={14}/></a></article>)}</div>
-    {data&&<section className="panel" style={{marginTop:30}}><div className="panel-heading"><h3>Downloaded file provenance</h3><span className="data-label">{data.frame}</span></div><div className="table-scroll"><table><thead><tr><th>Official file</th><th>Size</th><th>SHA-256</th><th>Source</th></tr></thead><tbody>{Object.entries(data.manifest.sources).map(([name,record])=>{const r=record as any;return <tr key={name}><td>{name}</td><td>{(r.bytes/1048576).toFixed(2)} MB</td><td title={r.sha256}>{r.sha256.slice(0,20)}…</td><td><a className="text-link" href={r.url} target="_blank" rel="noreferrer">NASA/PDS <ExternalLink size={11}/></a></td></tr>;})}</tbody></table></div></section>}
-    <section className="provenance-key"><div><span className="status passing">Published</span><p>Official NASA/PDS files with source URLs, retrieval time and SHA-256 hashes.</p></div><div><span className="status unknown">Derived</span><p>Site selection, terrain horizons and visibility are computed from those published inputs. The 80 m pixel scale, 1° horizon rays and finite adaptive sampling remain practical limits.</p></div><div><span className="status unevaluated">Assumed / Unknown</span><p>Mission hardware is supplied by you. Rock hazards, lander-scale slopes, DSN availability and landing safety are not certified.</p></div></section>
-  </div>;
+export function Sources({
+  state,
+  navigate
+}: {
+  state?: MissionState;
+  navigate?: (p: Page) => void;
+}) {
+  return <DataSourcesInteractive state={state} navigate={navigate} />;
 }

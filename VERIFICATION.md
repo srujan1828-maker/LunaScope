@@ -73,3 +73,35 @@ The default 2027-01-01 through 2027-01-15 window produces different measurements
 The planner now presents selected-location metrics and its actual failure explanation above the catalog summary. Opening the explorer carries the selected location into the primary scene. A Chrome regression check verified different selected measurements, correct selection transfer, a 257×257 terrain mesh and zero page errors. The frontend production build passed. Backend calculations were inspected through the API; the complete backend suite was not rerun for this frontend-only change.
 
 The terrain view uses a wider default crop, denser display mesh, lower overview camera, smaller compass markers and neutral inspection lighting. Visual inspection exposed shadow-map acne appearing as repeated bands; rendering bias/culling was adjusted and a second capture inspected. These settings affect graphical shadows, not the scientific terrain vertices, horizon calculation or numerical visibility. The 80 m source still cannot produce photographic surface detail.
+
+## Complete Moon globe
+
+The horizon explorer now opens a complete rotating/orbitable globe, with a selected-location marker, focus/reset controls and a switch to the local terrain view. It uses an actual NASA LOLA LDEM_4 V3.0 global elevation overview and a derived LROC color mosaic. The global IMG/label were downloaded from the official LOLA archive; their source URLs, byte counts and hashes are in data/moon_global_dem_provenance.json. The color texture was obtained from a documented public mirror because the NASA SVS server timed out; the mirror JPEG is recompressed, not byte-identical to NASA's original. Its URL, processing and hash are recorded in data/moon_globe_provenance.json. It is visualization imagery, not a replacement for the regional scientific inputs.
+
+The global overview was checked numerically against the original IMG pixel values, half-metre scaling, longitude rotation and 4×4 averaging (agreement to JSON rounding tolerance). The frontend build passed. Chrome checks passed globe texture/DEM loading, focus/reset, switching to local terrain and back, mobile width, zero page errors and zero failed asset requests. The complete-globe capture was visually inspected. Backend science calculations were unchanged and the full scientific suite was not rerun for this addition.
+
+
+## Imported frontend integration — 2026-11-15
+
+The supplied `Downloads/frontend/frontend` design is now the active frontend. Its theme, cards, navigation, circular map, timeline layout and Learn widgets were integrated with the existing scientific backend. Its fixed scientific values, fake site fallbacks and synthetic mission curves were excluded. Scientific geometry and metrics remain based on the documented NASA datasets. The previous source was backed up outside the repository before replacement; the user's supplied frontend directory was not edited.
+
+Recorded checks:
+
+- Production TypeScript/Vite build passed. Vite still reports the existing large lazy-loaded Three.js bundle warning; the build is successful.
+- `python -m pytest backend/tests/test_api.py backend/tests/test_integrity_and_matching.py backend/tests/test_e2e_fullstack.py backend/tests/test_realtime_sim.py -q`: **28 passed**, one existing Starlette/httpx deprecation warning, **92.80 seconds**. This targeted API/integration run is separate from the earlier complete 64-test scientific run.
+- Chrome normal-workflow verification: 13 real catalog locations; distinct metrics when changing site; shared UTC start including 06:30:00; backup selection; full Moon and local terrain switches; measured horizon chart; timeline sunlight sample compared directly with API output; seven provenance rows and CSV download; all seven Learn tabs. **No JavaScript errors or failed asset/API responses.**
+- All six routes at 390 × 844: document width **390 px**. Initial Data/Horizon overflow was corrected and the browser run repeated successfully.
+- Tool workflow verification: scenario saved and JSON exported through the backend; a real one-day window search returned an applicable window and retained 06:30 UTC; power dialog opened; mast API returned eight heights; dispersion API populated the real result panel.
+- Deliberately injected 503 responses for dispersion and scenario evaluation: visible errors appeared, old results were cleared, and timeline readings became Unknown. These test responses are not production data or backend changes.
+- Source whitespace check passed. Imported illustrative assets have file hashes and a separate provenance record in `data/frontend_design_provenance.json`; no claim of independently verified NASA authorship is made for those teaching images.
+
+Reproduce with the local service running on port 8000, Python Playwright installed and Google Chrome available:
+
+```powershell
+python frontend/checks/verify_interface.py
+python frontend/checks/verify_tools.py
+```
+
+The checks use isolated browser storage; outputs go to ignored `frontend/verification-output/`. They do not change the user's browser preferences. The tools check creates a temporary in-memory backend scenario and tests failure handling by intercepting requests only inside its own browser session.
+
+No commit, GitHub push, cloud deployment or new CI run was performed for this integration.

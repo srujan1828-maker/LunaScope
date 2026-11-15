@@ -1,3 +1,4 @@
+import {API} from '../mission';
 import { PowerConfig } from '../types';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -34,6 +35,8 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
   const [isConnected, setIsConnected] = useState(false);
   const [isLiveRunning, setIsLiveRunning] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(60.0);
+  const [connectionError,setConnectionError]=useState('');
+  const [connectionAttempt,setConnectionAttempt]=useState(0);
   const [telemetry, setTelemetry] = useState<any>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -44,12 +47,14 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
     // Construct WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host || '127.0.0.1:8000';
-    const wsUrl = `${protocol}//${host}/api/ws/simulation`;
+    const wsUrl = (API||`${protocol}//${host}`).replace(/^http/,'ws')+'/api/ws/simulation';
 
+    let active=true;setTelemetry(null);setConnectionError('');
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      if(!active)return;
       ws.send(JSON.stringify({command: "configure", antenna_margin_deg: antennaMarginDeg, power_config: powerConfig}));
       setIsConnected(true);
       // Sync sites & mast height
@@ -59,6 +64,7 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
     };
 
     ws.onmessage = (event) => {
+      if(!active)return;
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'telemetry_frame') {
@@ -66,23 +72,27 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
           onTimeRef.current(data.timestamp_unix);
         } else if (data.type === 'session_init') {
           setTelemetry(data.frame);
+        } else if (data.type === 'error') {
+          setConnectionError(data.message||'Stream calculation failed.');setIsLiveRunning(false);setTelemetry(null);
         } else if (data.type === 'status' && 'is_running' in data) {
           setIsLiveRunning(data.is_running);
         }
       } catch (e) {
-        console.error('WS parse error:', e);
+        setConnectionError('The simulation sent an unreadable message. Reconnect to retry.');
       }
     };
 
+    ws.onerror=()=>{if(active)setConnectionError('Simulation connection failed. Reconnect to retry.');};
     ws.onclose = () => {
+      if(!active)return;setConnectionError(prev=>prev||'Simulation disconnected. Reconnect to continue.');setTelemetry(null);
       setIsConnected(false);
       setIsLiveRunning(false);
     };
 
     return () => {
-      ws.close();
+      active=false;ws.close();
     };
-  }, []);
+  }, [connectionAttempt]);
 
   // Update server when sites or mast height change
   useEffect(() => {
@@ -91,7 +101,7 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
       wsRef.current.send(JSON.stringify({ command: 'set_mast', mast_height_m: mastHeightM }));
     }
     if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify({command: "configure", antenna_margin_deg: antennaMarginDeg, power_config: powerConfig}));
-  }, [selectedSiteIds, mastHeightM, antennaMarginDeg, powerConfig]);
+  }, [selectedSiteIds.join(','), mastHeightM, antennaMarginDeg, powerConfig]);
 
   useEffect(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify({command: "seek", timestamp_unix: currentUnix}));
@@ -127,6 +137,8 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
 
   return (
     <div className="glass-panel rounded-2xl p-4 flex flex-col gap-3 border border-cyan-500/30">
+      {connectionError&&<p role="alert" className="text-red-400 text-xs">{connectionError} <button className="text-link" onClick={()=>{setIsConnected(false);setConnectionAttempt(v=>v+1);}}>Reconnect simulation</button></p>}
+      {!powerConfig.enabled&&<p className="text-xs text-slate-400">Electrical model disabled. Geometry continues; battery state is not advanced.</p>}
       {/* Top Controls Row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -248,6 +260,7 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
             </span>
           </div>
 
+          {powerConfig.enabled&&primaryTel.power&&<>
           {/* 4. Instantaneous Power */}
           <div className="bg-slate-900/80 border border-slate-800/80 rounded-xl p-2.5 flex flex-col gap-1">
             <span className="text-[10px] text-yellow-400 flex items-center gap-1 font-medium">
@@ -287,6 +300,7 @@ export const RealtimeSimulationBar: React.FC<RealtimeSimulationBarProps> = ({
             </div>
           </div>
 
+          </>}
           {/* 6. Event Horizon Lookahead */}
           <div className="bg-slate-900/80 border border-slate-800/80 rounded-xl p-2.5 flex flex-col gap-1">
             <span className="text-[10px] text-indigo-400 flex items-center gap-1 font-medium">

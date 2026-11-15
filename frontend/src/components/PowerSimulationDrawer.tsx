@@ -35,7 +35,7 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
   const powerSim = primaryData?.power_simulation;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="Power and battery model" className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
       <div className="glass-panel w-full max-w-4xl rounded-2xl border border-emerald-500/30 p-6 flex flex-col gap-6 max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -58,7 +58,7 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={onClose} aria-label="Close dialog"
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
           >
             <X className="w-5 h-5" />

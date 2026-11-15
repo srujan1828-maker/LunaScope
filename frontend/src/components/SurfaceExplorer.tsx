@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {Play,Pause,SkipBack,SkipForward,RotateCcw,Download,Compass,Sun,Globe,ArrowUpRight} from 'lucide-react';
 import {API,MissionState,missionStart} from '../mission';
 import {TerrainViewport} from './TerrainViewport';
+import {MoonGlobe} from './MoonGlobe';
 import type {TerrainCrop,TerrainSource,SurfaceFrame,PickedPoint} from './surfaceTypes';
 
 async function json(url:string,init?:RequestInit){const res=await fetch(API+url,init);const body=await res.json();if(!res.ok)throw new Error(typeof body.detail==='string'?body.detail:'Scientific data could not be evaluated. Check location, UTC and installed inputs.');return body;}
@@ -38,6 +39,7 @@ export function SurfaceExplorer({state,onPower,onDispersion,onMast}:{state:Missi
   const [width,setWidth]=useState(25.6),[view,setView]=useState<'orbit'|'ground'|'sun'|'earth'>('orbit'),[colored,setColored]=useState(false),[compare,setCompare]=useState(false);
   const [picked,setPicked]=useState<PickedPoint|null>(null);const sequence=useRef(0);
   const [inspectionLight,setInspectionLight]=useState(true);
+  const [wholeMoon,setWholeMoon]=useState(true);
   const latitude=center?.lat_deg,longitude=center?.lon_deg,candidate=frames[state.primary];
   const frame=candidate&&latitude!=null&&longitude!=null&&Math.abs(candidate.location.lat_deg-latitude)<1e-7&&Math.abs((candidate.location.lon_deg-longitude+540)%360-180)<1e-7?candidate:null;
   const ids=(compare?state.ids:[state.primary]).join(',');
@@ -83,11 +85,13 @@ export function SurfaceExplorer({state,onPower,onDispersion,onMast}:{state:Missi
         <label className="field">Displayed region<select aria-label="Terrain crop width" value={width} onChange={e=>setWidth(Number(e.target.value))}>{[1.28,6.4,12.8,25.6].map(w=><option key={w} value={w}>{w} km across</option>)}</select></label>
         <label className="field">Observer mast (m)<input aria-label="Surface observer mast" type="number" min=".5" max="30" step=".5" value={state.mission.mast} onChange={e=>{if(e.target.valueAsNumber>=.5&&e.target.valueAsNumber<=30)state.update('mast',e.target.valueAsNumber);}}/></label>
       </div>
-      <div className="terrain-stage"><TerrainViewport mesh={mesh} frame={frame} onPick={setPicked} view={view} colored={colored} inspectionLight={inspectionLight}/>
-        <div className="terrain-caption"><span>{terrainLoading?'Loading terrain detail…':mesh?`${mesh.samples} × ${mesh.samples} measured/interpolated grid samples`:'Terrain unavailable'}</span><strong>{mesh?.source.dataset||'NASA LOLA'}</strong><span>North: teal arrow · East: gold arrow</span></div>
-        <div className="terrain-view-buttons">{(['orbit','ground','sun','earth'] as const).map(v=><button key={v} className={`button compact ${view===v?'primary':'secondary'}`} onClick={()=>setView(v)}>{v==='orbit'?'Orbit terrain':v==='ground'?'Observer view':v==='sun'?'Look at Sun':'Look at Earth'}</button>)}</div>
+      <div className="moon-mode-tabs"><button className={`button compact ${wholeMoon?'primary':'secondary'}`} onClick={()=>setWholeMoon(true)}>Whole Moon</button><button className={`button compact ${!wholeMoon?'primary':'secondary'}`} onClick={()=>setWholeMoon(false)}>Local surface</button><span>Full globe or detailed south-pole terrain</span></div>
+      <div className="terrain-stage">{wholeMoon?<MoonGlobe frame={frame} lat={latitude??-90} lon={longitude??0}/>:<TerrainViewport mesh={mesh} frame={frame} onPick={setPicked} view={view} colored={colored} inspectionLight={inspectionLight}/>}
+        {!wholeMoon&&<div className="terrain-caption"><span>{terrainLoading?'Loading terrain detail…':mesh?`${mesh.samples} × ${mesh.samples} measured/interpolated grid samples`:'Terrain unavailable'}</span><strong>{mesh?.source.dataset||'NASA LOLA'}</strong><span>North: teal arrow · East: gold arrow</span></div>}
+        {!wholeMoon&&<div className="terrain-view-buttons">{(['orbit','ground','sun','earth'] as const).map(v=><button key={v} className={`button compact ${view===v?'primary':'secondary'}`} onClick={()=>setView(v)}>{v==='orbit'?'Orbit terrain':v==='ground'?'Observer view':v==='sun'?'Look at Sun':'Look at Earth'}</button>)}</div>}
         {picked&&<div className="terrain-pick"><span className="eyebrow">NEAREST DISPLAYED DEM SAMPLE</span><strong>{numeric(picked.lat_deg,5)}° / {numeric(picked.lon_deg,5)}° E</strong><span>{numeric(picked.elevation_m,1)} m elevation · height error {numeric(picked.uncertainty_m,2,' m')}</span><button className="text-link" onClick={()=>{setPoint(picked);setPicked(null);setPlaying(false);}}>Analyze this location <ArrowUpRight size={13}/></button></div>}
       </div>
+      {wholeMoon&&<p className="chart-caption">Whole-Moon context: NASA SVS LROC color mosaic (visualization-optimized) and global LOLA elevation overview. The detailed 80 m south-pole data remains the analysis source. <a href="https://svs.gsfc.nasa.gov/4720/" target="_blank" rel="noreferrer">NASA source & credits</a></p>}
       {(terrainError||error)&&<p className="error-message" role="alert">{terrainError||error}</p>}
       <div className="terrain-legend"><label><input type="checkbox" checked={colored} onChange={e=>setColored(e.target.checked)}/> Elevation colors</label><label><input type="checkbox" aria-label="Inspection fill light" checked={inspectionLight} onChange={e=>setInspectionLight(e.target.checked)}/> Inspection fill light</label><span className="height-gradient"/><span>{numeric(mesh?.elevation_range_m[0],0)} to {numeric(mesh?.elevation_range_m[1],0)} m</span><span>DEM {mesh?.source.pixel_scale_m??'—'} m/pixel · mesh {numeric(mesh?.mesh_spacing_m,0)} m · known terrain {numeric(mesh?mesh.coverage_fraction*100:null,1)}%</span></div>
       <p className="chart-caption">Drag to orbit · wheel to zoom · shift-drag to pan · click terrain to inspect. Shapes come from elevation data. Lighting and local shadow maps use the calculated Sun direction; shadows are limited to the displayed crop. Soft edges and a small viewing fill light are visual approximations. Sky disks use their calculated angular sizes; Earth is a phase-lit sphere, without weather imagery.</p>

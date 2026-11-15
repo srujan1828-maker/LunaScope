@@ -1,0 +1,6 @@
+import {X} from 'lucide-react';
+import {MissionState} from '../mission';
+export function BackupDialog({isOpen,onClose,state}:{isOpen:boolean;onClose:()=>void;state:MissionState}){
+ if(!isOpen)return null;
+ return <div className="integration-modal" role="dialog" aria-modal="true" aria-label="Prepare backup locations" onKeyDown={e=>{if(e.key==='Escape')onClose();}}><section className="integration-dialog"><header><h2>Prepare backup locations</h2><button aria-label="Close backups" onClick={onClose}><X/></button></header><p>Each location is evaluated against the same mission dates and requirements as your primary. Selecting a backup does not make a failing location feasible.</p>{state.busy?<p role="status">Calculating the current mission…</p>:state.error?<p role="alert">{state.error}</p>:state.matches?.rankings.filter(r=>r.site_id!==state.primary).map(r=><label className="backup-option" key={r.site_id}><input type="checkbox" checked={state.backups.includes(r.site_id)} onChange={()=>state.toggleBackup(r.site_id)}/><span><strong>{r.name} · {r.passed?'Passing':'Failing'}</strong><small>{r.explanation}</small></span></label>)||<p>No evaluation available yet.</p>}<button className="button primary" onClick={onClose}>Done</button></section></div>;
+}

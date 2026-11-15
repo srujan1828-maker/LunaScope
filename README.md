@@ -59,9 +59,27 @@ Detailed evidence and implementation history: [VERIFICATION.md](VERIFICATION.md)
 | Home | Introduces the workspace and opens the planning tools |
 | Mission Planner | Sets mission dates, UTC start time, duration, sunlight and Earth-visibility requirements; evaluates, sorts and compares the catalog; selects primary and backup points |
 | Horizon Simulator | Hosts the measured 3D terrain explorer, Sun/Earth readings, 360° terrain horizon, UTC playback, site comparison and advanced analysis tools |
-| Timeline | Provides editable planning phases, dates, durations and schedule export; this is a planning schedule rather than a trajectory calculation |
+| Timeline | Shows backend-computed sunlight fraction, direct-to-Earth visibility, operating states and battery charge on one mission-time cursor |
 | Educator Mode | Explains terrain clearance, sunlight and geometric Earth visibility with explicitly labeled conceptual diagrams |
 | Data & Sources | Shows scientific sources, file provenance, saved Horizons comparison results and integration limitations |
+
+### Imported frontend integration (15 November 2026)
+
+The user-supplied `Downloads/frontend/frontend` interface replaces the previous page layouts: dark navy cards, amber/teal theme, circular polar atlas, mode selector, data tables, horizon widgets, multi-track timeline, seven Learn tabs and illustrated teaching controls. Missing scientific widgets were implemented in the same visual language. The original supplied directory is unchanged; integration lives in this repository's `frontend/`.
+
+All production planning values come from the existing backend. Fixed sample sunlight durations, sinusoidal mission trajectories, generated battery curves, fictional site fallbacks and simulated terrain were excluded. The circular atlas uses the registered NASA LOLA hillshade and its actual polar projection. The solar-elevation histogram is weighted by elapsed time because the backend's adaptive timestamps are unevenly spaced. Unknown data stays unknown; an unavailable API produces a visible error rather than example values.
+
+Site selection, comparison locations, UTC start (including seconds), mission duration, mast and power settings are shared across the planner, horizon and timeline. Up to three sites can be compared. Backup selections use the current mission's ranked results; selecting a backup does not override failed constraints. Window search and scenario export use the backend, and applying a window preserves its UTC start time. The existing full Moon globe, measured surface explorer, power model, mast sweep, dispersion analysis and advanced streamed session remain accessible in the imported interface.
+
+The background video retains its existing loop transition. Imported Learn images and the orbit video are **user-supplied illustrations, not NASA measurements**; their external authorship was not independently verified. File sizes and hashes are recorded in [frontend_design_provenance.json](data/frontend_design_provenance.json). DSN cards explicitly show that tracking status is not connected. The seven scientific input files and global Moon provenance retain their separate records.
+
+Integration verification: production TypeScript/Vite build passed; **28 backend API/matching/realtime/full-stack tests passed** (92.80 seconds; one existing Starlette/httpx deprecation warning). Chrome browser checks passed for the 13-location catalog, differing site results, shared UTC, backups, globe/local terrain, measured horizon chart, timeline/API agreement, provenance downloads and all seven Learn tabs. All six pages fit a 390 px mobile viewport with no horizontal page overflow. No JavaScript errors or failed asset/API responses were reported in the normal workflow check. These local results do not represent a new cloud deployment or a new GitHub CI run. The tool-dialog check also passed backend scenario export, window search/apply, the eight-height mast sweep and landing dispersion, including explicit handling of injected unavailable-data responses. Repeatable Chrome checks are in `frontend/checks/verify_interface.py` and `frontend/checks/verify_tools.py`; see [VERIFICATION.md](VERIFICATION.md) for prerequisites and scope.
+
+### Complete 3D Moon globe
+
+The horizon page opens a complete rotatable Moon globe, with reset/zoom controls and a marker/focus control for the selected surface location. **Whole Moon** and **Local surface** switch between global context and detailed terrain analysis. The global shape uses NASA LOLA `LDEM_4` V3.0 (0.25° source grid, averaged to a 1° shape overview) at its actual radial scale. A bump map derived from the same global raster supports shading. The global map is centered on 0° longitude and registered separately from the 80 m south-pole analysis grid.
+
+The globe's LROC color mosaic is NASA SVS visualization imagery. NASA's original download server timed out, so a JPEG-recompressed copy was retrieved from an explicitly recorded public mirror; it is not byte-identical to the original and is not a scientific analysis input. Source URLs, processing, credits and hashes are recorded in [moon_globe_provenance.json](data/moon_globe_provenance.json) and [moon_global_dem_provenance.json](data/moon_global_dem_provenance.json). Local mission calculations continue to use the original regional LOLA/SPICE inputs described below. Global imagery does not resolve lander-scale hazards.
 
 ### Measured 3D terrain explorer
 

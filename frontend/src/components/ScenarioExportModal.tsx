@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect,useRef } from 'react';
 import { saveScenario, getExportUrl } from '../api/client';
 import { Download, X, FileJson, FileSpreadsheet, Check, Sparkles } from 'lucide-react';
 
@@ -17,11 +17,14 @@ export const ScenarioExportModal: React.FC<ScenarioExportModalProps> = ({
   const [notes, setNotes] = useState('Comparative evaluation for surface operations');
   const [savedId, setSavedId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const revision=useRef(0);
+  const [error,setError]=useState('');
+  useEffect(()=>{revision.current++;setSavedId(null);setError('');setIsSaving(false);},[scenarioPayload,isOpen,title,notes]);
 
   if (!isOpen) return null;
 
   const handleSaveAndPrepareExport = async () => {
-    setIsSaving(true);
+    const currentRevision=revision.current;setIsSaving(true);setError('');
     try {
       const fullPayload = {
         title,
@@ -33,16 +36,16 @@ export const ScenarioExportModal: React.FC<ScenarioExportModalProps> = ({
         provenance: scenarioPayload.provenance || {},
       };
       const res = await saveScenario(fullPayload);
-      setSavedId(res.scenario_id);
+      if(revision.current===currentRevision)setSavedId(res.scenario_id);
     } catch (e) {
-      console.error(e);
+      if(revision.current===currentRevision)setError(e instanceof Error?e.message:'Scenario export failed.');
     } finally {
-      setIsSaving(false);
+      if(revision.current===currentRevision)setIsSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="Export mission scenario" className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
       <div className="glass-panel w-full max-w-lg rounded-2xl border border-cyan-500/30 p-6 flex flex-col gap-5 shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
@@ -54,14 +57,14 @@ export const ScenarioExportModal: React.FC<ScenarioExportModalProps> = ({
             </h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={onClose} aria-label="Close dialog"
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex flex-col gap-3 text-xs">
+        <div className="flex flex-col gap-3 text-xs">{error&&<p role="alert" className="text-red-400">{error}</p>}
           <div className="flex flex-col gap-1">
             <label className="text-slate-300 font-medium">Scenario Title</label>
             <input

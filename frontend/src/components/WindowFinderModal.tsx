@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect,useRef } from 'react';
 import { LandingSite, WindowSearchResult, CandidateWindow } from '../types';
 import { searchMissionWindows } from '../api/client';
 import {
@@ -18,6 +18,9 @@ interface WindowFinderModalProps {
   onClose: () => void;
   selectedSites: LandingSite[];
   mastHeightM: number;
+  missionStart?:string;
+  missionDays?:number;
+  missionEarth?:number;
   onApplyWindow: (startIso: string, durationDays: number) => void;
 }
 
@@ -26,7 +29,7 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
   onClose,
   selectedSites,
   mastHeightM,
-  onApplyWindow,
+  onApplyWindow,missionStart,missionDays,missionEarth,
 }) => {
   const [searchStart, setSearchStart] = useState('2027-01-01T00:00:00Z');
   const [searchEnd, setSearchEnd] = useState('2027-02-15T00:00:00Z');
@@ -41,13 +44,17 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
   const [maxEarthOutageHours, setMaxEarthOutageHours] = useState(30.0);
   const [minJointPct, setMinJointPct] = useState(45.0);
 
+  const request=useRef<AbortController|null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<WindowSearchResult | null>(null);
 
+  useEffect(()=>{if(!isOpen)return;setResult(null);setError(null);if(missionStart){setSearchStart(missionStart);setSearchEnd(new Date(new Date(missionStart).getTime()+45*86400000).toISOString());}if(missionDays)setDurationDays(Math.min(30,missionDays));if(missionEarth!=null)setMinEarthPct(missionEarth);},[isOpen,missionStart,missionDays,missionEarth,selectedSites.map(s=>s.site_id).join(','),mastHeightM]);
+  useEffect(()=>{request.current?.abort();setIsLoading(false);setResult(null);setError(null);return()=>request.current?.abort();},[isOpen,selectedSites.map(s=>s.site_id).join(','),mastHeightM,searchStart,searchEnd,durationDays,strideHours,minSunPct,maxShadowGapHours,minEarthPct,maxEarthOutageHours,minJointPct,priority]);
   if (!isOpen) return null;
 
   const handleSearch = async () => {
+    request.current?.abort();const controller=new AbortController();request.current=controller;
     setIsLoading(true);
     setError(null);
     try {
@@ -64,17 +71,17 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
         min_joint_pct: minJointPct,
         priority,
         mast_height_m: mastHeightM,
-      });
-      setResult(res);
+      },controller.signal);
+      if(!controller.signal.aborted)setResult(res);
     } catch (err: any) {
-      setError(err.message || 'Window search failed');
+      if(!controller.signal.aborted)setError(err.message || 'Window search failed');
     } finally {
-      setIsLoading(false);
+      if(!controller.signal.aborted)setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="Find mission windows" className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
       <div className="glass-panel w-full max-w-4xl rounded-2xl border border-cyan-500/30 p-6 flex flex-col gap-6 max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -92,7 +99,7 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={onClose} aria-label="Close dialog"
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
           >
             <X className="w-5 h-5" />

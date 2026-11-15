@@ -108,3 +108,27 @@ def test_websocket_simulation():
         status_msg = ws.receive_json()
         assert status_msg["type"] == "status"
         assert status_msg["speed_multiplier"] == 120.0
+
+
+def test_streamed_power_toggle_and_initial_charge():
+    """Electrical settings must also apply to the separate live session."""
+    with client.websocket_connect('/api/ws/simulation') as ws:
+        ws.receive_json()
+        ws.send_json({'command':'configure','power_config':{'enabled':False}})
+        assert all(site['power'] is None for site in ws.receive_json()['sites'].values())
+        ws.send_json({'command':'step','dt_seconds':3600})
+        assert all(site['power'] is None for site in ws.receive_json()['sites'].values())
+        ws.send_json({'command':'select_sites','site_ids':['lola-sp-002']})
+        assert ws.receive_json()['sites']['lola-sp-002']['power'] is None
+        ws.send_json({'command':'configure','power_config':{'enabled':True,'initial_soc_pct':25}})
+        assert ws.receive_json()['sites']['lola-sp-002']['power']['battery_soc_pct'] == 25
+        ws.send_json({'command':'configure','power_config':{'enabled':True,'initial_soc_pct':75}})
+        assert ws.receive_json()['sites']['lola-sp-002']['power']['battery_soc_pct'] == 75
+
+
+def test_disabled_stream_preserves_battery_state():
+    session=RealtimeSimulationSession(['lola-sp-001'],1798761600.0,initial_soc_pct=50)
+    session.power_enabled=False
+    before=dict(session.battery_energy_wh)
+    session.advance_time(3600)
+    assert session.battery_energy_wh==before

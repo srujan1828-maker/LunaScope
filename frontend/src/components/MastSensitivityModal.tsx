@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import {API} from '../mission';
 import { LandingSite } from '../types';
 import { ArrowUpCircle, X, Sparkles, Check, TrendingUp } from 'lucide-react';
 
@@ -22,15 +23,17 @@ export const MastSensitivityModal: React.FC<MastSensitivityModalProps> = ({
   onApplyMastHeight,
 }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error,setError]=useState('');
   const [sweepData, setSweepData] = useState<any[]>([]);
 
   useEffect(() => {
+    const controller=new AbortController();
     if (isOpen && site) {
-      setIsLoading(true);
+      setIsLoading(true);setError('');setSweepData([]);
       const startDt = new Date(startDateIso);
       const endDt = new Date(startDt.getTime() + durationDays * 86400 * 1000);
 
-      fetch('/api/simulation/mast-sensitivity', {
+      fetch(API+'/api/simulation/mast-sensitivity', {signal:controller.signal,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -40,17 +43,18 @@ export const MastSensitivityModal: React.FC<MastSensitivityModalProps> = ({
           mast_heights: [0.5, 1.0, 2.0, 3.5, 5.0, 7.5, 10.0, 15.0],
         }),
       })
-        .then((res) => res.json())
+        .then(async res=>{const body=await res.json();if(!res.ok)throw new Error(typeof body.detail==='string'?body.detail:'Mast analysis failed. Check the mission inputs.');return body;})
         .then((data) => setSweepData(data.sweep || []))
-        .catch((e) => console.error(e))
-        .finally(() => setIsLoading(false));
+        .catch((e) => {if(!controller.signal.aborted)setError(e.message);})
+        .finally(() => {if(!controller.signal.aborted)setIsLoading(false);});
     }
+    return()=>controller.abort();
   }, [isOpen, site, startDateIso, durationDays]);
 
   if (!isOpen || !site) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-label="Mast sensitivity" className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
       <div className="glass-panel w-full max-w-3xl rounded-2xl border border-emerald-500/30 p-6 flex flex-col gap-5 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -68,7 +72,7 @@ export const MastSensitivityModal: React.FC<MastSensitivityModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={onClose} aria-label="Close dialog"
             className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
@@ -88,7 +92,7 @@ export const MastSensitivityModal: React.FC<MastSensitivityModalProps> = ({
           </div>
         </div>
 
-        {/* Sweep Table */}
+        {error&&<p role="alert" className="text-red-400">{error}</p>}{/* Sweep Table */}
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center gap-2 text-xs text-slate-400 font-mono">
             <Sparkles className="w-5 h-5 text-emerald-400 animate-spin" />

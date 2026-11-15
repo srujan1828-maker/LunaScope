@@ -21,3 +21,6 @@ data/nasa/
 !.env.example
 *.pem
 *.key
+
+# Local browser verification artifacts
+frontend/verification-output/

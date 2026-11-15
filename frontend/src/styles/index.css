@@ -1,8 +1,8 @@
 :root {
   --color-canvas: #030712;
-  --color-surface: #0b1329;
-  --color-surface-card: #0f1c3f;
-  --color-surface-hover: #192b58;
+  --color-surface: #051019;
+  --color-surface-card: #051019;
+  --color-surface-hover: #081a29;
   --color-border: #1e293b;
   --color-border-glow: #38bdf840;
   
@@ -54,14 +54,14 @@ code, pre, .font-mono {
 
 /* Glassmorphism card styles */
 .glass-panel {
-  background: rgba(15, 28, 63, 0.7);
+  background: #051019;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(56, 189, 248, 0.15);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
 }
 
 .glass-card {
-  background: rgba(11, 19, 41, 0.6);
+  background: #051019;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }

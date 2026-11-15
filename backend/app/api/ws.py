@@ -172,12 +172,19 @@ async def websocket_simulation_endpoint(websocket: WebSocket):
                 from app.api.schemas import PowerConfig
                 from pydantic import ValidationError
                 try:
-                    cfg = PowerConfig.model_validate(msg.get('power_config', {}))
+                    raw_config = msg.get('power_config', {})
+                    if not isinstance(raw_config, dict):
+                        raise ValueError('Power configuration must be an object')
+                    # Older stream clients omit the flag when updating hardware.
+                    cfg = PowerConfig.model_validate({'enabled': session.power_enabled, **raw_config})
                     margin = float(msg.get('antenna_margin_deg',0))
                     if not math.isfinite(margin) or not 0 <= margin <= 10:
                         raise ValueError('Invalid antenna margin')
                     session.antenna_margin_deg = margin
-                    changed = session.battery_capacity_wh != cfg.battery_capacity_wh
+                    changed = (session.battery_capacity_wh != cfg.battery_capacity_wh
+                               or session.initial_soc_pct != cfg.initial_soc_pct
+                               or session.power_enabled != cfg.enabled)
+                    session.power_enabled = cfg.enabled
                     session.spacecraft_load_w = cfg.spacecraft_load_w
                     session.panel_area_m2 = cfg.panel_area_m2
                     session.panel_efficiency = cfg.panel_efficiency
@@ -206,7 +213,7 @@ async def websocket_simulation_endpoint(websocket: WebSocket):
                     session.spacecraft_load_w, session.panel_area_m2, session.battery_capacity_wh)
                 for sid in new_sites:
                     replacement.battery_energy_wh[sid] = session.battery_energy_wh.get(sid,replacement.battery_energy_wh[sid])
-                for key in ["panel_efficiency", "panel_orientation", "reserve_margin_pct", "initial_soc_pct",'fixed_azimuth_deg','derating_factor','charge_efficiency','discharge_efficiency']:
+                for key in ["panel_efficiency", "panel_orientation", "reserve_margin_pct", "initial_soc_pct",'fixed_azimuth_deg','derating_factor','charge_efficiency','discharge_efficiency','power_enabled']:
                     if hasattr(session,key): setattr(replacement,key,getattr(session,key))
                 session = replacement
                 manager.sessions[websocket] = session

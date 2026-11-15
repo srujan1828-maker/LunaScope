@@ -6,6 +6,7 @@ import {
 } from '../types';
 
 const BASE_URL = (import.meta as any).env?.VITE_API_URL || '';
+function detailMessage(detail:unknown,fallback:string){return typeof detail==='string'?detail:Array.isArray(detail)?detail.map(item=>item.msg||'Invalid request').join('; '):fallback;}
 
 export async function fetchSites(): Promise<LandingSite[]> {
   const res = await fetch(`${BASE_URL}/api/sites`);
@@ -21,15 +22,15 @@ export async function evaluateScenario(payload: {
   antenna_margin_deg: number;
   sun_threshold: number;
   power_config?: any;
-}): Promise<ScenarioEvaluationResult> {
-  const res = await fetch(`${BASE_URL}/api/scenarios/evaluate`, {
+}, signal?:AbortSignal): Promise<ScenarioEvaluationResult> {
+  const res = await fetch(`${BASE_URL}/api/scenarios/evaluate`, {signal,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Evaluation failed');
+    throw new Error(detailMessage(err.detail,'Evaluation failed'));
   }
   return res.json();
 }
@@ -47,15 +48,15 @@ export async function searchMissionWindows(payload: {
   min_joint_pct: number;
   priority: string;
   mast_height_m: number;
-}): Promise<WindowSearchResult> {
-  const res = await fetch(`${BASE_URL}/api/windows/search`, {
+}, signal?:AbortSignal): Promise<WindowSearchResult> {
+  const res = await fetch(`${BASE_URL}/api/windows/search`, {signal,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Search failed');
+    throw new Error(detailMessage(err.detail,'Search failed'));
   }
   return res.json();
 }
@@ -73,7 +74,7 @@ export async function runContingencyAnalysis(payload: {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Contingency analysis failed');
+    throw new Error(detailMessage(err.detail,'Contingency analysis failed'));
   }
   return res.json();
 }

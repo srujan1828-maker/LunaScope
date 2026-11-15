@@ -1,0 +1,157 @@
+{
+  "interface_source": "User-supplied Downloads/frontend/frontend",
+  "integration_date": "2026-11-15",
+  "scope": "Styles and teaching visuals imported. Sample scientific values and fake terrain datasets are not used. Regional terrain and analysis remain NASA LOLA/JPL SPICE. The pre-existing background video remains unchanged.",
+  "assets": {
+    "dsn-canberra.jpg": {
+      "bytes": 316401,
+      "sha256": "cc535bf31e8a00d14776aba573f847d52d60439cbed07b9cfa5fa68262d59896",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "dsn-goldstone.jpg": {
+      "bytes": 197747,
+      "sha256": "62a3bbbd362d28506dea3724be9746b6784f0b3e005f3c73ee5c9d58347178e2",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "dsn-madrid.jpg": {
+      "bytes": 197292,
+      "sha256": "5a83ac6dfca95b5c9995566db04c82a7dde12a9331b269e942703cb3ad681469",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "earth-floating.png": {
+      "bytes": 72281,
+      "sha256": "41ce2f0f8829d87b4fd774ee0d560dd23d8b874cd90ab42222496430d7e09540",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "glossary-dte.png": {
+      "bytes": 816578,
+      "sha256": "0300de840d45cfd410202fc7a8d2894da8be6553865283f947e8a940f82d8c45",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "glossary-optical-libration.png": {
+      "bytes": 15541,
+      "sha256": "f16f304b98ec0c94026fac920ba74fb5ad29e4f7878f3075800d57750cff8157",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "glossary-psr.png": {
+      "bytes": 20002,
+      "sha256": "26a719edc31d2f438e116116a117148dc0a13a7fe3353fc08834b0e44f16cf01",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "glossary-topocentric.png": {
+      "bytes": 19777,
+      "sha256": "ce2427e68e9358f778c11af7b3ec938a2c639c3dcce47ac5bfed6ac159cffbaa",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-challenge-cold.png": {
+      "bytes": 806632,
+      "sha256": "7d749e44a42591441f73320cce16d3f585f730ccc9bb6993cce7478811a760e6",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-challenge-dust.png": {
+      "bytes": 800394,
+      "sha256": "28b5885b322b9fe64d89db36f04ce29b5f483bf24ea4247996e9921f0a51d84a",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-challenge-slope.png": {
+      "bytes": 842719,
+      "sha256": "bdbf0be036eee52742b36e7997e153449f0f6b98131a6db7825afb66f54184a2",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-challenges-banner.png": {
+      "bytes": 659583,
+      "sha256": "a120628fb44078c37c2e2b866749ac6f2df710ff11178c77abb6852c18cc82e3",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-dte-antenna.png": {
+      "bytes": 816578,
+      "sha256": "0300de840d45cfd410202fc7a8d2894da8be6553865283f947e8a940f82d8c45",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-dte-link-canvas.png": {
+      "bytes": 774792,
+      "sha256": "586f7cdebd3f8f14b790d2ccc4f110e142354200f1e946d04243aa73f7bdb1f5",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-glossary-banner.png": {
+      "bytes": 28408,
+      "sha256": "110be246eceefc3013ed80995e337e62aba1968b094ee450504c778af3a63f8c",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-lunar-south-pole.png": {
+      "bytes": 449287,
+      "sha256": "974702d6aafc6012965bfccde2d0ded42957e8295583b8a37c6a226ef4509e6f",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-orbit-motion.png": {
+      "bytes": 621390,
+      "sha256": "28d74d294c857e943c77ed01b9242a0101e59aae21c23f6437b21c1e194d815a",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-orbit-sim.mp4": {
+      "bytes": 1284987,
+      "sha256": "4d6aa61a05f42bf1f22effcf7fe73eb18549b46c0e9f7fbc319be7cfcc1139b9",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-power-canvas-bg.png": {
+      "bytes": 646523,
+      "sha256": "84d323f1a1760b17ca4639ba748c4d4b024d345bde7209eb53716b4a8827c4fe",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-power-canvas.png": {
+      "bytes": 671761,
+      "sha256": "9b8c86a3bda62a27ecd398f386316cb172938cb17834fa8585965703ef1cec0c",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-power-illumination.png": {
+      "bytes": 449287,
+      "sha256": "974702d6aafc6012965bfccde2d0ded42957e8295583b8a37c6a226ef4509e6f",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-solar-array.png": {
+      "bytes": 449287,
+      "sha256": "974702d6aafc6012965bfccde2d0ded42957e8295583b8a37c6a226ef4509e6f",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-sun-earth-canvas-bg.png": {
+      "bytes": 681650,
+      "sha256": "29e756d7a4fc0e7eff0792897701d1bdc045d783cf7f4defb19522de1ffa687a",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-sun-earth-canvas.png": {
+      "bytes": 694528,
+      "sha256": "87cfeeb49124e77a1ffc6cb8a950709eece4c54cb70533c81cd7be76e561368c",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    },
+    "learn-sun-earth-motion.png": {
+      "bytes": 621390,
+      "sha256": "28d74d294c857e943c77ed01b9242a0101e59aae21c23f6437b21c1e194d815a",
+      "purpose": "Educational or decorative image/video; not a scientific input",
+      "source": "User-supplied frontend assets; external authorship not independently verified"
+    }
+  }
+}

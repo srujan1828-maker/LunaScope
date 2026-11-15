@@ -65,6 +65,8 @@ class RealtimeSimulationSession:
         self.spacecraft_load_w = spacecraft_load_w
         self.panel_area_m2 = panel_area_m2
         self.battery_capacity_wh = battery_capacity_wh
+        self.initial_soc_pct = initial_soc_pct
+        self.power_enabled = True
         self.is_running = False
         self.last_tick_time = time.time()
 
@@ -198,7 +200,10 @@ class RealtimeSimulationSession:
             p_net = p_gen - self.spacecraft_load_w
 
             curr_batt = self.battery_energy_wh[sid]
-            if p_net >= 0:
+            if not self.power_enabled:
+                # Disabling the electrical model must not evolve its stored battery state.
+                unmet_w = 0.0
+            elif p_net >= 0:
                 curr_batt = min(self.battery_capacity_wh, curr_batt + (p_net * dt_hours * getattr(self,'charge_efficiency',.92)))
                 unmet_w = 0.0
             else:
@@ -247,7 +252,7 @@ class RealtimeSimulationSession:
                     "battery_soc_pct": round(soc_pct, 1),
                     "unmet_load_w": round(unmet_w, 1),
                     "reserve_breached": bool(soc_pct < getattr(self,"reserve_margin_pct",20.0))
-                },
+                } if self.power_enabled else None,
                 "upcoming_events": upcoming_events
             }
 

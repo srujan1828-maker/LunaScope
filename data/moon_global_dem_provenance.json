@@ -1,0 +1,21 @@
+{
+  "dataset": "LDEM_4 V3.0",
+  "use": "Whole-Moon shape and shading overview; local mission analysis retains LDEM_80S_80M",
+  "source_pixel_spacing_deg": 0.25,
+  "overview_spacing_deg": 1,
+  "height_scale_m": 0.5,
+  "reference_radius_m": 1737400.0,
+  "frame": "MOON_ME_DE421",
+  "files": {
+    "LDEM_4.LBL": {
+      "url": "https://imbrium.mit.edu/DATA/LOLA_GDR/CYLINDRICAL/IMG/LDEM_4.LBL",
+      "bytes": 5107,
+      "sha256": "b5a197b4d417e3b5e0e84f8fe15f9a1d2203b8eb5d7213236c0ffbc86e940cc6"
+    },
+    "LDEM_4.IMG": {
+      "url": "https://imbrium.mit.edu/DATA/LOLA_GDR/CYLINDRICAL/IMG/LDEM_4.IMG",
+      "bytes": 2073600,
+      "sha256": "972d66d7f330abca62abc21aae270661516c00dd1a881ec102b94df9563656b5"
+    }
+  }
+}
