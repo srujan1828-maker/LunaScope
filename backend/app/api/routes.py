@@ -18,6 +18,7 @@ from app.api.schemas import (
 from app.data.sites_catalog import get_sites_catalog, get_site_by_id
 from app.core.horizon import compute_horizon_360
 from app.core.ephemeris import compute_ephemeris_track, topocentric_az_el, get_subsolar_coordinates, get_subearth_coordinates, SOLAR_RADIUS_DEG
+from app.core.events import visibility_series
 from app.core.visibility import (
     fractional_solar_visibility,
     evaluate_dte_visibility,
@@ -37,7 +38,7 @@ from app.core.scenario_store import (
 )
 
 router = APIRouter()
-from app.core.nasa_data import readiness,provenance,manifest
+from app.core.nasa_data import readiness,provenance,manifest,DataUnavailable
 
 @router.get('/data/status')
 def data_status():return readiness()
@@ -45,11 +46,27 @@ def data_status():return readiness()
 @router.get('/data/provenance')
 def data_provenance():return {**provenance(), 'manifest':manifest()}
 
+@router.get('/data/validation')
+def data_validation():
+    from pathlib import Path
+    import json
+    path=Path(__file__).resolve().parents[3]/'data'/'validation'/'horizons_report.json'
+    return json.loads(path.read_text()) if path.exists() else {'passed':False,'scope':'Independent Horizons comparison has not been installed or run'}
+
 
 
 @router.get("/health")
 def health_check() -> Dict[str, Any]:
     return {"status": "ok" if readiness()["ready"] else "data_required", "data": readiness(), "app": "LunaScope 3.0", "timestamp_utc": datetime.now(timezone.utc).isoformat()}
+
+@router.get('/live')
+def liveness():return {'status':'alive'}
+
+@router.get('/ready')
+def readiness_check(response:Response):
+    state=readiness()
+    if not state['ready']:response.status_code=503
+    return state
 
 
 @router.get("/sites")
@@ -89,31 +106,13 @@ def evaluate_scenario(req: EvaluateScenarioRequest) -> Dict[str, Any]:
             mast_height_m=req.mast_height_m
         )
 
-        # 2. Ephemeris
-        eph = compute_ephemeris_track(
-            site_lat_deg=site_info["lat_deg"],
-            site_lon_deg=site_info["lon_deg"],
-            start_unix=start_unix,
-            end_unix=end_unix,
-            step_seconds=step_seconds
-        )
-
-        sample_hours = [max(0.0, min(step_seconds, end_unix-t)) / 3600 for t in eph["timestamps"]]
-
-        # 3. Visibility & States
-        f_sun = fractional_solar_visibility(eph["sun_azimuth"], eph["sun_elevation"], horizon)
-        c_dte = evaluate_dte_visibility(
-            eph["earth_azimuth"],
-            eph["earth_elevation"],
-            horizon,
-            margin_deg=req.antenna_margin_deg
-        )
-        states = classify_operational_states(f_sun, c_dte, sun_threshold=req.sun_threshold)
-        metrics = compute_interval_metrics(f_sun, c_dte, step_hours=step_hours, sun_threshold=req.sun_threshold, sample_hours=sample_hours)
+        series=visibility_series(site_info['lat_deg'],site_info['lon_deg'],start_unix,end_unix,req.mast_height_m,req.antenna_margin_deg,req.sun_threshold)
+        eph=series['ephemeris'];sample_hours=series['sample_hours'];f_sun=series['solar_fractions'];c_dte=series['dte_visibility']
+        states=series['operational_states'];metrics=series['interval_metrics'].copy()
 
         # 4. Optional power simulation
         power_sim = None
-        if req.power_config and req.power_config.enabled:
+        if req.power_config and req.power_config.enabled and metrics['coverage']=='complete':
             power_sim = simulate_power_and_battery(
                 timestamps=eph["timestamps"],
                 solar_fractions=f_sun,
@@ -126,6 +125,10 @@ def evaluate_scenario(req: EvaluateScenarioRequest) -> Dict[str, Any]:
                 battery_capacity_wh=req.power_config.battery_capacity_wh,
                 initial_soc_pct=req.power_config.initial_soc_pct,
                 reserve_margin_pct=req.power_config.reserve_margin_pct,
+                fixed_azimuth_deg=req.power_config.fixed_azimuth_deg,
+                derating_factor=req.power_config.derating_factor,
+                charge_efficiency=req.power_config.charge_efficiency,
+                discharge_efficiency=req.power_config.discharge_efficiency,
                 solar_flux_w_m2=eph.get("solar_flux_w_m2"),
                 step_hours=step_hours,
                 sample_hours=sample_hours
@@ -142,11 +145,12 @@ def evaluate_scenario(req: EvaluateScenarioRequest) -> Dict[str, Any]:
             "operational_states": states,
             "interval_metrics": metrics,
             "power_simulation": power_sim
+            ,"events":series['events'],"sampling":series['sampling'],"horizon_profile":series['horizon_profile']
         }
 
     # Generate comparative insights
     insights = []
-    if len(req.site_ids) >= 2:
+    if len(req.site_ids) >= 2 and all(r['interval_metrics']['coverage']=='complete' for r in sites_result.values()):
         s1_id = req.site_ids[0]
         s2_id = req.site_ids[1]
         m1 = sites_result[s1_id]["interval_metrics"]
@@ -174,7 +178,8 @@ def evaluate_scenario(req: EvaluateScenarioRequest) -> Dict[str, Any]:
         "inputs": req.model_dump(),
         "evaluated_sites": sites_result,
         "comparative_insights": insights,
-        "provenance": {**provenance(), "power_model": "User-specified hardware assumptions applied to NASA-data illumination"}
+        "provenance": {**provenance(),"calculated_at_utc":datetime.now(timezone.utc).isoformat(),"time_range_utc":[req.start_time_iso,req.end_time_iso],
+            "calculation_method":"Spherical terrain rays, SPICE LT+S topocentric directions, angular disk quadrature and adaptive time brackets", "power_model": "User-specified hardware assumptions applied to NASA-data illumination"}
     }
 
 
@@ -196,6 +201,8 @@ def search_windows(req: SearchWindowsRequest) -> Dict[str, Any]:
             mast_height_m=req.mast_height_m
         )
         return res
+    except DataUnavailable:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -210,6 +217,8 @@ def run_contingency(req: ContingencyRequest) -> Dict[str, Any]:
             min_joint_days=req.min_joint_days
         )
         return res
+    except DataUnavailable:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -255,6 +264,8 @@ def run_dispersion_analysis(req: DispersionRequest) -> Dict[str, Any]:
             num_samples=req.num_samples,
             mast_height_m=req.mast_height_m
         )
+    except DataUnavailable:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -270,6 +281,8 @@ def run_mast_sensitivity(req: MastSensitivityRequest) -> Dict[str, Any]:
             end_unix=end_unix,
             mast_heights=req.mast_heights
         )
+    except DataUnavailable:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

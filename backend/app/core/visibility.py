@@ -1,130 +1,67 @@
-"""
-Visibility Evaluation & Operational Regime Classifier.
-Implements fractional solar disk penumbral grazing with Eddington limb darkening,
-geometric Direct-to-Earth (DTE) line-of-sight tracking, and interval metric integrations.
-"""
+"""Terrain disk quadrature, Earth-center geometry and duration-weighted metrics.
 
-import math
-from typing import Dict, List, Any
+Uniform circular disk approximation in the local angular tangent plane. No atmosphere.
+Unknown sectors propagate as None and operational state zero, never darkness or Pass.
+"""
 import numpy as np
-
 from app.core.ephemeris import SOLAR_RADIUS_DEG
 
-
-def fractional_solar_visibility(
-    sun_az_deg: List[float] | np.ndarray,
-    sun_el_deg: List[float] | np.ndarray,
-    horizon_360: List[float] | np.ndarray,
-    limb_darkening: bool = False
-) -> List[float]:
-    """
-    Computes exposed solar disk fraction f(t) in [0.0, 1.0] accounting for
-    penumbral ridge grazing and optional solar limb darkening.
-    
-    Formula:
-      u = (elevation - horizon) / solar_radius
-      u >= 1.0  -> 1.0 (Full disk)
-      u <= -1.0 -> 0.0 (Total shadow)
-      -1.0 < u < 1.0 -> circular segment area integration with limb darkening profile:
-        I(r) = 1 - u_coeff * (1 - sqrt(1 - r^2))
-    """
-    az_arr = np.asarray(sun_az_deg, dtype=np.float64)
-    el_arr = np.asarray(sun_el_deg, dtype=np.float64)
-    h_arr = np.asarray(horizon_360, dtype=np.float64)
-
-    h_local = np.interp(az_arr % 360, np.arange(361), np.append(h_arr, h_arr[0]))
-
-    # Normalized vertical offset: u = (sun_elevation - horizon) / solar_radius
-    u = (el_arr - h_local) / SOLAR_RADIUS_DEG
-
-    f = np.zeros_like(u, dtype=np.float64)
-    f[u >= 1.0] = 1.0
-
-    partial = (u > -1.0) & (u < 1.0)
-    if np.any(partial):
-        u_p = u[partial]
-        # Standard geometric circular segment area fraction
-        f_geom = (np.arccos(-u_p) + u_p * np.sqrt(1.0 - u_p ** 2)) / np.pi
-
-        if limb_darkening:
-            # Linear limb darkening correction (u_coeff = 0.6 for solar photosphere)
-            u_coeff = 0.6
-            # Weight disk center higher than grazing limbs
-            moment = 0.5 * (2/3 + u_p - u_p**3/3)
-            f_val = ((1-u_coeff) * f_geom + u_coeff * moment) / (1-u_coeff/3)
-            f[partial] = np.clip(f_val, 0.0, 1.0)
-        else:
-            f[partial] = f_geom
-
-    return [round(float(val), 4) for val in f]
+NODES,WEIGHTS=np.polynomial.legendre.leggauss(48)
 
 
-def evaluate_dte_visibility(
-    earth_az_deg: List[float] | np.ndarray,
-    earth_el_deg: List[float] | np.ndarray,
-    horizon_360: List[float] | np.ndarray,
-    margin_deg: float = 0.0
-) -> List[int]:
-    """
-    Evaluates geometric Direct-to-Earth (DTE) visibility C(t) in {0, 1}.
-    C(t) = 1 if Earth center elevation clears local terrain horizon + margin.
-    """
-    az_arr = np.asarray(earth_az_deg, dtype=np.float64)
-    el_arr = np.asarray(earth_el_deg, dtype=np.float64)
-    h_arr = np.asarray(horizon_360, dtype=np.float64)
-
-    h_local = np.interp(az_arr % 360, np.arange(361), np.append(h_arr, h_arr[0]))
-
-    visible = el_arr > (h_local + margin_deg)
-    return [int(val) for val in visible]
+def interpolate_horizon(azimuth,horizon):
+    h=np.asarray(horizon,dtype=float)
+    return np.interp(np.asarray(azimuth)%360,np.arange(len(h)+1)*360/len(h),np.r_[h,h[0]])
 
 
-def classify_operational_states(
-    solar_fractions: List[float],
-    dte_visibility: List[int],
-    sun_threshold: float = 0.10
-) -> List[int]:
-    """
-    Classify each timestep into one of four operational regimes:
-      - State 1: Nominal Science (f >= thresh and DTE == 1)
-      - State 2: Autonomous Day (f >= thresh and DTE == 0)
-      - State 3: Tethered Eclipse (f < thresh and DTE == 1)
-      - State 4: Total Blackout (f < thresh and DTE == 0)
-    """
-    states = []
-    for f, c in zip(solar_fractions, dte_visibility):
-        has_sun = (f >= sun_threshold)
-        has_comms = (c == 1)
-        if has_sun and has_comms:
-            states.append(1)
-        elif has_sun and not has_comms:
-            states.append(2)
-        elif not has_sun and has_comms:
-            states.append(3)
-        else:
-            states.append(4)
-    return states
+def fractional_solar_visibility(sun_az_deg,sun_el_deg,horizon_360,limb_darkening=False,angular_radius_deg=SOLAR_RADIUS_DEG):
+    az,el,r=np.broadcast_arrays(np.asarray(sun_az_deg,dtype=float),np.asarray(sun_el_deg,dtype=float),np.asarray(angular_radius_deg,dtype=float))
+    offsets=r[...,None]*NODES
+    az_offsets=offsets/np.maximum(.01,np.cos(np.radians(el)))[...,None]
+    horizon=interpolate_horizon(az[...,None]+az_offsets,horizon_360)
+    half=np.sqrt(np.maximum(0,r[...,None]**2-offsets**2))
+    low=el[...,None]-half;high=el[...,None]+half
+    length=np.clip(high-np.maximum(horizon,low),0,2*half)
+    if limb_darkening:
+        c=.6;yc=np.clip(horizon-el[...,None],-half,half)
+        root=np.sqrt(np.maximum(0,half**2-yc**2))
+        area=.5*(half**2*(np.pi/2-np.arcsin(np.clip(yc/np.maximum(half,1e-20),-1,1)))-yc*root)
+        integral=(1-c)*length+c*area/r[...,None]
+        full_integral=(1-c)*2*half+c*(np.pi*.5*half**2)/r[...,None]
+        fractions=np.sum(integral*WEIGHTS,axis=-1)/np.sum(full_integral*WEIGHTS,axis=-1)
+    else:fractions=np.sum(length*WEIGHTS,axis=-1)/np.sum(2*half*WEIGHTS,axis=-1)
+    full=np.all(horizon<=low,axis=-1);blocked=np.all(horizon>=high,axis=-1)
+    fractions=np.where(full,1,np.where(blocked,0,np.clip(fractions,0,1)))
+    return [round(float(f),6) if np.isfinite(f) else None for f in np.atleast_1d(fractions)]
 
 
-def compute_interval_metrics(solar_fractions, dte_visibility, step_hours=1.0, sun_threshold=0.10, sample_hours=None):
-    if len(solar_fractions) != len(dte_visibility):
-        raise ValueError('Mismatched visibility arrays')
-    weights = np.asarray(sample_hours if sample_hours is not None else [step_hours]*len(solar_fractions), dtype=float)
-    if len(weights) != len(solar_fractions) or np.any(~np.isfinite(weights)) or np.any(weights < 0):
-        raise ValueError('Invalid interval durations')
-    total = float(weights.sum())
-    sun = np.asarray(solar_fractions) >= sun_threshold
-    earth = np.asarray(dte_visibility) == 1
+def evaluate_dte_visibility(earth_az_deg,earth_el_deg,horizon_360,margin_deg=0.):
+    margin=np.asarray(earth_el_deg)-interpolate_horizon(earth_az_deg,horizon_360)-margin_deg
+    return [int(v>0) if np.isfinite(v) else None for v in np.atleast_1d(margin)]
+
+
+def classify_operational_states(solar_fractions,dte_visibility,sun_threshold=.10):
+    return [0 if f is None or c is None or not np.isfinite(f) else (1 if f>=sun_threshold and c else 2 if f>=sun_threshold else 3 if c else 4)
+        for f,c in zip(solar_fractions,dte_visibility)]
+
+
+def compute_interval_metrics(solar_fractions,dte_visibility,step_hours=1.,sun_threshold=.10,sample_hours=None):
+    if len(solar_fractions)!=len(dte_visibility):raise ValueError('Mismatched visibility arrays')
+    weights=np.asarray(sample_hours if sample_hours is not None else [step_hours]*len(solar_fractions),dtype=float)
+    if len(weights)!=len(solar_fractions) or np.any(~np.isfinite(weights)) or np.any(weights<0):raise ValueError('Invalid interval durations')
+    total=float(weights.sum());fractions=np.asarray(solar_fractions,dtype=float);contacts=np.asarray(dte_visibility,dtype=float)
+    known=np.isfinite(fractions)&np.isfinite(contacts);sun=fractions>=sun_threshold;earth=contacts==1
     def longest(mask):
-        best = current = 0.0
-        for active, hours in zip(mask, weights):
-            if hours == 0: continue
-            current = current + hours if active else 0.0
-            best = max(best, current)
-        return best
-    def pct(mask): return float(weights[mask].sum())/total*100 if total else 0.0
-    return {'total_duration_hours': total, 'sun_availability_pct': pct(sun),
-            'equivalent_sun_hours': float(np.dot(solar_fractions,weights)),
-            'longest_shadow_gap_hours': longest(~sun), 'earth_availability_pct': pct(earth),
-            'longest_earth_outage_hours': longest(~earth), 'joint_availability_pct': pct(sun & earth),
-            'longest_joint_window_hours': longest(sun & earth), 'coverage': 'complete' if total else 'unknown'}
+        best=current=0.
+        for active,hours in zip(mask&known,weights):
+            if hours==0:continue
+            current=current+hours if active else 0.;best=max(best,current)
+        return float(best)
+    def pct(mask):return float(weights[mask&known].sum())/total*100 if total else None
+    complete=bool(np.all(known|(weights==0))) and total>0
+    return {'total_duration_hours':total,'sun_availability_pct':pct(sun) if complete else None,
+        'equivalent_sun_hours':float(np.dot(np.nan_to_num(fractions),weights)) if complete else None,
+        'longest_shadow_gap_hours':longest(~sun) if complete else None,'earth_availability_pct':pct(earth) if complete else None,
+        'longest_earth_outage_hours':longest(~earth) if complete else None,'joint_availability_pct':pct(sun&earth) if complete else None,
+        'longest_joint_window_hours':longest(sun&earth) if complete else None,'coverage':'complete' if complete else 'unknown',
+        'known_duration_hours':float(weights[known].sum()),'unknown_duration_hours':float(weights[~known].sum())}

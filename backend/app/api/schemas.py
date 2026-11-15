@@ -34,8 +34,6 @@ class ValidatedRequest(BaseModel):
                 raise ValueError('Unknown site')
         if hasattr(self, 'mast_heights') and (not 1 <= len(self.mast_heights) <= 20 or any(not 0.5 <= h <= 30 for h in self.mast_heights)):
             raise ValueError('Provide 1 to 20 finite mast heights between 0.5 and 30m')
-        if hasattr(self, 'stride_hours') and (self.stride_hours != int(self.stride_hours) or abs(self.mission_duration_days*24-round(self.mission_duration_days*24)) > 1e-8):
-            raise ValueError('Search stride and mission duration must resolve to whole hours')
         return self
 
 
@@ -48,6 +46,10 @@ class PowerConfig(ValidatedRequest):
     battery_capacity_wh: float = Field(2400.0, gt=0, le=100000000)
     initial_soc_pct: float = Field(100.0, ge=0, le=100)
     reserve_margin_pct: float = Field(20.0, ge=0, le=100)
+    fixed_azimuth_deg: float = Field(0,ge=0,le=360)
+    derating_factor: float = Field(.85,gt=0,le=1)
+    charge_efficiency: float = Field(.92,gt=0,le=1)
+    discharge_efficiency: float = Field(.95,gt=0,le=1)
 
 
 class EvaluateScenarioRequest(ValidatedRequest):

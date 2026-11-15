@@ -1,0 +1,15 @@
+services:
+  lunascope:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      HOST: "0.0.0.0"
+      LUNASCOPE_DATA_DIR: /app/data/nasa
+      LUNASCOPE_AUTO_FETCH: "true"
+    volumes:
+      - nasa-data:/app/data/nasa
+    restart: unless-stopped
+volumes:
+  nasa-data:

@@ -27,7 +27,7 @@ class SimulationConnectionManager:
         await websocket.accept()
         self.active_connections.add(websocket)
         # Default session starting Jan 1, 2027 00:00:00 UTC (1735689600.0)
-        default_session = RealtimeSimulationSession(
+        default_session = await asyncio.to_thread(RealtimeSimulationSession,
             site_ids=[s["site_id"] for s in get_sites_catalog()[:2]],
             start_unix=1798761600.0,
             mast_height_m=2.0,
@@ -36,7 +36,7 @@ class SimulationConnectionManager:
         self.sessions[websocket] = default_session
 
         # Send initial state frame
-        initial_frame = default_session.compute_frame(dt_seconds=0.0)
+        initial_frame = await asyncio.to_thread(default_session.compute_frame,dt_seconds=0.0)
         await websocket.send_json({
             "type": "session_init",
             "message": "Connected to LunaScope Real-Time Simulation Engine",
@@ -67,7 +67,7 @@ class SimulationConnectionManager:
                 while session.is_running and websocket in self.active_connections:
                     # Simulated seconds per tick = tick_interval * speed_multiplier
                     sim_dt = tick_interval * session.speed_multiplier
-                    frame = session.advance_time(sim_dt)
+                    frame = await asyncio.to_thread(session.advance_time,sim_dt)
                     await websocket.send_json(frame)
                     await asyncio.sleep(tick_interval)
             except (asyncio.CancelledError, WebSocketDisconnect):
@@ -147,7 +147,7 @@ async def websocket_simulation_endpoint(websocket: WebSocket):
                 # Single step forward or backward
                 manager.pause_streaming(websocket)
                 dt = float(msg.get("dt_seconds", 3600.0))
-                frame = session.advance_time(dt)
+                frame = await asyncio.to_thread(session.advance_time,dt)
                 await websocket.send_json(frame)
 
             elif cmd == "seek":
@@ -155,7 +155,7 @@ async def websocket_simulation_endpoint(websocket: WebSocket):
                 manager.pause_streaming(websocket)
                 session.battery_energy_wh = {sid: session.battery_capacity_wh * getattr(session,"initial_soc_pct",100)/100 for sid in session.site_ids}
                 session.current_unix = target_unix
-                frame = session.compute_frame(dt_seconds=0.0)
+                frame = await asyncio.to_thread(session.compute_frame,dt_seconds=0.0)
                 await websocket.send_json(frame)
 
             elif cmd == "set_speed":
@@ -164,8 +164,8 @@ async def websocket_simulation_endpoint(websocket: WebSocket):
 
             elif cmd == "set_mast":
                 new_mast = float(msg.get("mast_height_m", 2.0))
-                session.update_mast_height(new_mast)
-                frame = session.compute_frame(dt_seconds=0.0)
+                await asyncio.to_thread(session.update_mast_height,new_mast)
+                frame = await asyncio.to_thread(session.compute_frame,dt_seconds=0.0)
                 await websocket.send_json(frame)
 
             elif cmd == "configure":
@@ -182,12 +182,14 @@ async def websocket_simulation_endpoint(websocket: WebSocket):
                     session.panel_area_m2 = cfg.panel_area_m2
                     session.panel_efficiency = cfg.panel_efficiency
                     session.panel_orientation = cfg.panel_orientation
+                    for key in ['fixed_azimuth_deg','derating_factor','charge_efficiency','discharge_efficiency']:
+                        setattr(session,key,getattr(cfg,key))
                     session.reserve_margin_pct = cfg.reserve_margin_pct
                     session.battery_capacity_wh = cfg.battery_capacity_wh
                     session.initial_soc_pct = cfg.initial_soc_pct
                     if changed:
                         session.battery_energy_wh = {sid: cfg.battery_capacity_wh * cfg.initial_soc_pct/100 for sid in session.site_ids}
-                    await websocket.send_json(session.compute_frame())
+                    await websocket.send_json(await asyncio.to_thread(session.compute_frame))
                 except (ValueError,TypeError,ValidationError) as exc:
                     await websocket.send_json({'type':'error','message':str(exc)})
 
@@ -199,18 +201,18 @@ async def websocket_simulation_endpoint(websocket: WebSocket):
                     continue
                 was_running = session.is_running
                 manager.pause_streaming(websocket)
-                replacement = RealtimeSimulationSession(new_sites, session.current_unix,
+                replacement = await asyncio.to_thread(RealtimeSimulationSession,new_sites, session.current_unix,
                     session.mast_height_m, session.antenna_margin_deg, session.speed_multiplier,
                     session.spacecraft_load_w, session.panel_area_m2, session.battery_capacity_wh)
                 for sid in new_sites:
                     replacement.battery_energy_wh[sid] = session.battery_energy_wh.get(sid,replacement.battery_energy_wh[sid])
-                for key in ["panel_efficiency", "panel_orientation", "reserve_margin_pct", "initial_soc_pct"]:
+                for key in ["panel_efficiency", "panel_orientation", "reserve_margin_pct", "initial_soc_pct",'fixed_azimuth_deg','derating_factor','charge_efficiency','discharge_efficiency']:
                     if hasattr(session,key): setattr(replacement,key,getattr(session,key))
                 session = replacement
                 manager.sessions[websocket] = session
                 if was_running:
                     await manager.start_streaming(websocket)
-                frame = session.compute_frame(dt_seconds=0.0)
+                frame = await asyncio.to_thread(session.compute_frame,dt_seconds=0.0)
                 await websocket.send_json(frame)
 
             else:

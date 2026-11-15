@@ -4,6 +4,8 @@ Manages live simulation sessions, computes high-frequency topocentric frames,
 instantaneous solar flux, battery dynamics, predictive event horizons, and geometric Earth visibility. DSN scheduling remains unknown.
 """
 
+from threading import RLock
+from functools import wraps
 import math
 import time
 from datetime import datetime, timezone
@@ -31,6 +33,12 @@ from app.core.nasa_data import provenance
 SOLAR_CONSTANT_W_M2: float = 1361.0
 
 
+def synchronized(method):
+    @wraps(method)
+    def wrapped(self,*args,**kwargs):
+        with self.lock:return method(self,*args,**kwargs)
+    return wrapped
+
 class RealtimeSimulationSession:
     """
     Stateful real-time simulation session for continuous lunar surface operations.
@@ -48,6 +56,7 @@ class RealtimeSimulationSession:
         battery_capacity_wh: float = 2400.0,
         initial_soc_pct: float = 100.0
     ):
+        self.lock=RLock()
         self.site_ids = site_ids
         self.current_unix = start_unix
         self.mast_height_m = mast_height_m
@@ -78,6 +87,7 @@ class RealtimeSimulationSession:
                     mast_height_m=mast_height_m
                 )
 
+    @synchronized
     def update_mast_height(self, new_mast_m: float):
         """Dynamically adjust mast height and recompute horizons."""
         self.mast_height_m = new_mast_m
@@ -91,6 +101,7 @@ class RealtimeSimulationSession:
                     mast_height_m=new_mast_m
                 )
 
+    @synchronized
     def advance_time(self, delta_sim_seconds: float) -> Dict[str, Any]:
         """Advance simulation time by delta_sim_seconds and return rich telemetry frame."""
         if not math.isfinite(delta_sim_seconds) or not 0 <= delta_sim_seconds <= 86400:
@@ -98,6 +109,7 @@ class RealtimeSimulationSession:
         self.current_unix += delta_sim_seconds
         return self.compute_frame(delta_sim_seconds)
 
+    @synchronized
     def compute_frame(self, dt_seconds: float = 0.0) -> Dict[str, Any]:
         """
         Compute instantaneous physics, geometry, power, DSN status, and event forecasts.
@@ -137,13 +149,8 @@ class RealtimeSimulationSession:
             h_sun = float(np.interp(sun_az % 360, np.arange(361), horizon + [horizon[0]]))
 
             # Fractional solar disk exposure
-            u_sun = (sun_el - h_sun) / SOLAR_RADIUS_DEG
-            if u_sun >= 1.0:
-                f_sun = 1.0
-            elif u_sun <= -1.0:
-                f_sun = 0.0
-            else:
-                f_sun = float((math.acos(-u_sun) + u_sun * math.sqrt(1.0 - u_sun**2)) / math.pi)
+            f_sun=fractional_solar_visibility([sun_az],[sun_el],horizon,angular_radius_deg=math.degrees(math.asin(695700000/sun_dist_m)))[0]
+            if f_sun is None:raise ValueError('Terrain coverage unknown for streamed simulation')
 
             # Topocentric Earth
             earth_az, earth_el = topocentric_az_el(
@@ -186,21 +193,21 @@ class RealtimeSimulationSession:
             # Instantaneous Power & Battery Dynamics
             cos_inc = max(0.0, math.cos(math.radians(max(0.0, sun_el)))) if f_sun > 0 else 0.0
             if getattr(self,"panel_orientation","tracking") == "fixed_vertical":
-                cos_inc *= max(0,math.cos(math.radians(sun_az)))
-            p_gen = instant_flux * self.panel_area_m2 * getattr(self,"panel_efficiency",0.28) * f_sun * cos_inc * 0.85
+                cos_inc *= max(0,math.cos(math.radians(sun_az-getattr(self,'fixed_azimuth_deg',0))))
+            p_gen = instant_flux * self.panel_area_m2 * getattr(self,"panel_efficiency",0.28) * f_sun * cos_inc * getattr(self,'derating_factor',.85)
             p_net = p_gen - self.spacecraft_load_w
 
             curr_batt = self.battery_energy_wh[sid]
             if p_net >= 0:
-                curr_batt = min(self.battery_capacity_wh, curr_batt + (p_net * dt_hours * 0.92))
+                curr_batt = min(self.battery_capacity_wh, curr_batt + (p_net * dt_hours * getattr(self,'charge_efficiency',.92)))
                 unmet_w = 0.0
             else:
-                deficit = abs(p_net) * dt_hours / 0.95
+                deficit = abs(p_net) * dt_hours / getattr(self,'discharge_efficiency',.95)
                 if curr_batt >= deficit:
                     curr_batt -= deficit
                     unmet_w = 0.0
                 else:
-                    unmet_w = (deficit - curr_batt) * 0.95 / max(1e-4, dt_hours)
+                    unmet_w = (deficit - curr_batt) * getattr(self,'discharge_efficiency',.95) / max(1e-4, dt_hours)
                     curr_batt = 0.0
 
             self.battery_energy_wh[sid] = curr_batt
@@ -263,44 +270,16 @@ class RealtimeSimulationSession:
             "sites": site_telemetry
         }
 
-    def _detect_upcoming_events(self, sinfo: Dict[str, Any], horizon: List[float], current_t: float) -> List[Dict[str, Any]]:
-        events = []
-        lookahead_hours = 48
-        step_s = 1800.0
-
-        lat, lon = get_subsolar_coordinates(current_t)
-        az, el = topocentric_az_el(sinfo["lat_deg"], sinfo["lon_deg"], lat, lon, site_elevation_m=sinfo["elevation_m"])
-        curr_sun_f = fractional_solar_visibility([az], [el], horizon)[0]
-
-        for step in range(1, int((lookahead_hours * 3600) / step_s)):
-            future_t = current_t + (step * step_s)
-            s_lat, s_lon = get_subsolar_coordinates(future_t)
-
-            s_az, s_el = topocentric_az_el(
-                sinfo["lat_deg"], sinfo["lon_deg"], s_lat, s_lon,
-                site_elevation_m=sinfo["elevation_m"]
-            )
-            h_s = horizon[int(round(s_az)) % 360]
-            f_s = fractional_solar_visibility([s_az], [s_el], horizon)[0]
-
-            hours_away = round((future_t - current_t) / 3600.0, 1)
-
-            if curr_sun_f is not None:
-                if curr_sun_f > 0 and f_s == 0:
-                    events.append({
-                        "event_type": "shadow_ingress",
-                        "hours_away": hours_away,
-                        "description": f"Terrain shadow ingress in ~{hours_away}h"
-                    })
-                    break
-                elif curr_sun_f == 0 and f_s > 0:
-                    events.append({
-                        "event_type": "sunrise_egress",
-                        "hours_away": hours_away,
-                        "description": f"Sunrise ridge clearance in ~{hours_away}h"
-                    })
-                    break
-
-            curr_sun_f = f_s
-
-        return events
+    def _detect_upcoming_events(self, sinfo, horizon, current_t):
+        from app.core.events import visibility_series
+        bucket=math.floor(current_t/1800)*1800
+        series=visibility_series(sinfo['lat_deg'],sinfo['lon_deg'],bucket,bucket+48*3600,self.mast_height_m,self.antenna_margin_deg)
+        for event in series['events']:
+            if event['timestamp_unix']<=current_t:continue
+            before=event['from_state'] in (1,2);after=event['to_state'] in (1,2)
+            if before!=after:
+                hours=(event['timestamp_unix']-current_t)/3600
+                return [{'event_type':'sunrise_egress' if after else 'shadow_ingress','hours_away':round(hours,2),
+                    'description':('Sun threshold rise' if after else 'Sun threshold fall')+f" in ~{hours:.2f}h (30-second event bracket)",
+                    'bracket_seconds':event['bracket_seconds']}]
+        return []

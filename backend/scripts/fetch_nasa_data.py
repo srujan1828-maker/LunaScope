@@ -2,10 +2,10 @@
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime,timezone
-import hashlib,json,urllib.request,time
+import hashlib,json,urllib.request,time,os
 
 ROOT=Path(__file__).resolve().parents[2]
-RAW=ROOT/'data'/'nasa';RAW.mkdir(parents=True,exist_ok=True)
+RAW=Path(os.environ.get('LUNASCOPE_DATA_DIR',str(ROOT/'data'/'nasa'))).expanduser().resolve();RAW.mkdir(parents=True,exist_ok=True)
 BASE='https://naif.jpl.nasa.gov/pub/naif/generic_kernels/'
 FILES={
  'LDEM_80S_80M.JP2':'https://imbrium.mit.edu/DATA/LOLA_GDR/POLAR/JP2/LDEM_80S_80M.JP2',

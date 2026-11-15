@@ -55,6 +55,8 @@ def test_missing_nasa_files_return_unavailable_without_fabricating(monkeypatch,t
     assert res.status_code==503
     assert res.json()['synthetic_fallback'] is False
     assert client.get('/api/data/status').json()['ready'] is False
+    assert client.get('/api/ready').status_code==503
+    assert client.get('/api/live').status_code==200
     nasa_data.terrain_grid.cache_clear()
 
 def test_provenance_and_no_fake_dsn_contacts():

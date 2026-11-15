@@ -1,5 +1,5 @@
 """
-Demonstration Spacecraft Power & Battery Storage Model.
+Configurable engineering power and battery model; no flight-performance certification.
 Simulates multi-junction solar array conversion (including orbital solar distance scaling
 and temperature efficiency coefficients), continuous azimuth tracking vs fixed arrays,
 and lithium-ion battery state-of-charge with unmet demand tracking.
@@ -51,8 +51,10 @@ def simulate_power_and_battery(
     total_unmet_wh = 0.0
 
     durations = sample_hours if sample_hours is not None else [step_hours] * n_steps
-    if len(durations) != n_steps or any(h < 0 for h in durations):
+    if len(durations) != n_steps or any(not math.isfinite(h) or h < 0 for h in durations):
         raise ValueError("Invalid sample durations")
+    if not 0<charge_efficiency<=1 or not 0<discharge_efficiency<=1 or battery_capacity_wh<=0:
+        raise ValueError('Invalid battery efficiency or capacity')
     for i in range(n_steps):
         step_hours = durations[i]
         f_sun = solar_fractions[i]
@@ -105,8 +107,8 @@ def simulate_power_and_battery(
         unmet_demand_wh.append(round(step_unmet, 1))
         reserve_breached.append(bool(current_energy < reserve_threshold_wh))
 
-    min_soc = min(soc_pct) if soc_pct else 0.0
-    min_energy = min(battery_energy_wh) if battery_energy_wh else 0.0
+    min_soc = min([initial_soc_pct]+soc_pct)
+    min_energy = min([initial_energy_wh]+battery_energy_wh)
     breach_count = sum(1 for b in reserve_breached if b)
 
     return {
@@ -117,6 +119,9 @@ def simulate_power_and_battery(
             "spacecraft_load_w": spacecraft_load_w,
             "battery_capacity_wh": battery_capacity_wh,
             "reserve_margin_pct": reserve_margin_pct
+            ,"initial_soc_pct":initial_soc_pct,"fixed_azimuth_deg":fixed_azimuth_deg,"derating_factor":derating_factor,
+            "charge_efficiency":charge_efficiency,"discharge_efficiency":discharge_efficiency,
+            "model":"Engineering estimate: azimuth-tracking vertical panel or fixed vertical panel, constant user load"
         },
         "summary": {
             "min_soc_pct": min_soc,
@@ -124,6 +129,10 @@ def simulate_power_and_battery(
             "total_unmet_demand_wh": round(total_unmet_wh, 1),
             "reserve_breach_hours": round(sum(h for h, breached in zip(durations, reserve_breached) if breached), 4),
             "battery_depleted": bool(total_unmet_wh > 0.0)
+            ,"total_generated_wh":round(sum(p*h for p,h in zip(p_gen_w,durations)),2),
+            "total_consumed_wh":round(spacecraft_load_w*sum(durations),2),
+            "longest_without_generation_hours":_longest_zero(p_gen_w,durations),
+            "reserve_requirement_wh":reserve_threshold_wh
         },
         "time_series": {
             "power_generated_w": p_gen_w,
@@ -131,5 +140,13 @@ def simulate_power_and_battery(
             "battery_energy_wh": battery_energy_wh,
             "battery_soc_pct": soc_pct,
             "unmet_demand_wh": unmet_demand_wh
+            ,"load_w":[spacecraft_load_w]*n_steps,"reserve_energy_wh":[round(e-reserve_threshold_wh,1) for e in battery_energy_wh],
+            "battery_state":['charging' if p>0 else 'discharging' if p<0 else 'balanced' for p in p_net_w]
         }
     }
+
+def _longest_zero(power,hours):
+    current=best=0.
+    for p,h in zip(power,hours):
+        current=current+h if p<=0 else 0.;best=max(best,current)
+    return round(best,4)

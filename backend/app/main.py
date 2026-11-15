@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from app.api.routes import router as api_router
 from app.api.ws import ws_router
 from app.api.matches import router as match_router
+from app.api.surface import router as surface_router
 from fastapi import HTTPException,Request
 from fastapi.responses import JSONResponse
 from app.core.nasa_data import DataUnavailable
@@ -28,10 +29,11 @@ async def missing_data(request:Request,exc:DataUnavailable):
     return JSONResponse(status_code=503,content={'detail':str(exc),'data_mode':'nasa-official','synthetic_fallback':False})
 
 # CORS middleware for development flexibility
+allowed_origins=[s.strip() for s in os.environ.get('LUNASCOPE_ALLOWED_ORIGINS','*').split(',') if s.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials='*' not in allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -40,6 +42,7 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 app.include_router(ws_router, prefix="/api")
 app.include_router(match_router, prefix="/api")
+app.include_router(surface_router, prefix="/api")
 
 @app.middleware('http')
 async def provenance_header(request, call_next):

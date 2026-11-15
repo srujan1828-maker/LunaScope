@@ -11,6 +11,8 @@ import numpy as np
 from app.data.sites_catalog import get_site_by_id
 from app.core.horizon import compute_horizon_360
 from app.core.ephemeris import compute_ephemeris_track
+from app.core.events import visibility_series,window_metrics
+from app.core.nasa_data import provenance
 from app.core.visibility import (
     fractional_solar_visibility,
     evaluate_dte_visibility,
@@ -42,7 +44,7 @@ def search_mission_windows(
     end_unix = end_dt.timestamp()
     
     duration_seconds = mission_duration_days * 86400.0
-    step_seconds = 3600.0  # 1 hour simulation step
+    step_seconds = 600.0
     step_hours = 1.0
     
     # Precompute horizons and continuous ephemeris for each site
@@ -59,34 +61,20 @@ def search_mission_windows(
             base_elevation_m=site_info["elevation_m"],
             mast_height_m=mast_height_m
         )
-        eph = compute_ephemeris_track(
-            site_lat_deg=site_info["lat_deg"],
-            site_lon_deg=site_info["lon_deg"],
-            start_unix=start_unix,
-            end_unix=total_eval_end_unix,
-            step_seconds=step_seconds
-        )
-        f_sun = fractional_solar_visibility(eph["sun_azimuth"], eph["sun_elevation"], horizon)
-        c_earth = evaluate_dte_visibility(eph["earth_azimuth"], eph["earth_elevation"], horizon)
+        series=visibility_series(site_info['lat_deg'],site_info['lon_deg'],start_unix,total_eval_end_unix,mast_height_m)
         
         site_data[sid] = {
             "info": site_info,
             "horizon": horizon,
-            "timestamps": eph["timestamps"],
-            "f_sun": f_sun,
-            "c_earth": c_earth
+            "series":series
         }
         
     candidate_windows = []
     current_start_unix = start_unix
-    mission_steps = int(round(duration_seconds / step_seconds))
-    stride_steps = max(1, int(round(stride_hours * 3600.0 / step_seconds)))
     
     # Window index in the precomputed array
-    start_idx = 0
     while current_start_unix <= end_unix:
         win_end_unix = current_start_unix + duration_seconds
-        end_idx = start_idx + mission_steps
         
         win_start_iso = datetime.fromtimestamp(current_start_unix, tz=timezone.utc).isoformat()
         win_end_iso = datetime.fromtimestamp(win_end_unix, tz=timezone.utc).isoformat()
@@ -95,14 +83,11 @@ def search_mission_windows(
         all_sites_passed = True
         
         for sid, sdata in site_data.items():
-            if end_idx > len(sdata["f_sun"]):
-                all_sites_passed = False
+            m=window_metrics(sdata['series'],current_start_unix,win_end_unix)
+            if m['coverage']!='complete':
+                all_sites_passed=False
+                site_metrics[sid]={'site_name':sdata['info']['name'],'metrics':m,'passed':False,'status':'Unknown','violations':['Incomplete terrain or time coverage; cannot pass']}
                 continue
-                
-            sub_f = sdata["f_sun"][start_idx:end_idx]
-            sub_c = sdata["c_earth"][start_idx:end_idx]
-            
-            m = compute_interval_metrics(sub_f, sub_c, step_hours=step_hours)
             
             # Constraint check
             violations = []
@@ -125,16 +110,15 @@ def search_mission_windows(
                 "site_name": sdata["info"]["name"],
                 "metrics": m,
                 "passed": site_passed,
+                "status":'Pass' if site_passed else 'Fail',
                 "violations": violations
             }
             
         # Composite score according to priority
         # Normalize: sun %, earth %, joint % contribute positively; shadow & outage negatively
-        avg_sun = np.mean([sm["metrics"]["sun_availability_pct"] for sm in site_metrics.values()]) if site_metrics else 0
-        avg_earth = np.mean([sm["metrics"]["earth_availability_pct"] for sm in site_metrics.values()]) if site_metrics else 0
-        avg_joint = np.mean([sm["metrics"]["joint_availability_pct"] for sm in site_metrics.values()]) if site_metrics else 0
-        avg_shadow = np.mean([sm["metrics"]["longest_shadow_gap_hours"] for sm in site_metrics.values()]) if site_metrics else 100
-        avg_outage = np.mean([sm["metrics"]["longest_earth_outage_hours"] for sm in site_metrics.values()]) if site_metrics else 100
+        def average(key,fallback):return float(np.mean([sm['metrics'].get(key) if sm['metrics'].get(key) is not None else fallback for sm in site_metrics.values()])) if site_metrics else fallback
+        avg_sun=average('sun_availability_pct',0);avg_earth=average('earth_availability_pct',0);avg_joint=average('joint_availability_pct',0)
+        avg_shadow=average('longest_shadow_gap_hours',duration_seconds/3600);avg_outage=average('longest_earth_outage_hours',duration_seconds/3600)
         
         if priority == "favour_sun":
             score = avg_sun * 0.6 + avg_joint * 0.3 - (avg_shadow * 1.5)
@@ -155,8 +139,7 @@ def search_mission_windows(
             "site_evaluations": site_metrics
         })
         
-        start_idx += stride_steps
-        current_start_unix += (stride_steps * step_seconds)
+        current_start_unix += stride_hours*3600
 
     # Sort passing windows first, then by composite score descending
     passing_windows = [w for w in candidate_windows if w["all_sites_passed"]]
@@ -201,4 +184,7 @@ def search_mission_windows(
         "alternative_windows": failing_windows[:5],
         "best_window": best_window,
         "explanation": explanation
+        ,"provenance":{**provenance(),'calculated_at_utc':datetime.now(timezone.utc).isoformat(),'time_range_utc':[search_start_iso,datetime.fromtimestamp(total_eval_end_unix,tz=timezone.utc).isoformat()],
+            'sampling':next(iter(site_data.values()))['series']['sampling'],
+            'ranking':'Hard constraints first. Balanced = .35 Sun% + .35 Earth% + .30 Joint% - .8 shadow hours - .5 outage hours; favour Sun = .6 Sun% + .3 Joint% - 1.5 shadow hours; favour Earth analogous; interruptions = .5 Joint% - 2 shadow hours - outage hours.'}
     }

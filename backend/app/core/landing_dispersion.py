@@ -13,6 +13,7 @@ from app.core.horizon import compute_horizon_360
 from app.core.ephemeris import compute_ephemeris_track
 from app.core.visibility import fractional_solar_visibility, evaluate_dte_visibility, compute_interval_metrics
 from app.data.sites_catalog import get_site_by_id
+from app.core.nasa_data import provenance
 
 
 def evaluate_landing_dispersion(
@@ -86,7 +87,7 @@ def evaluate_landing_dispersion(
             mast_height_m=mast_height_m
         )
         eph = compute_ephemeris_track(pt["lat_deg"], pt["lon_deg"], start_unix, end_unix, step_seconds=step_seconds)
-        f_sun = fractional_solar_visibility(eph["sun_azimuth"], eph["sun_elevation"], horizon)
+        f_sun = fractional_solar_visibility(eph["sun_azimuth"], eph["sun_elevation"], horizon,angular_radius_deg=eph['solar_angular_radius_deg'])
         c_dte = evaluate_dte_visibility(eph["earth_azimuth"], eph["earth_elevation"], horizon)
         m = compute_interval_metrics(f_sun, c_dte, sample_hours=[max(0,min(3600,end_unix-t))/3600 for t in eph["timestamps"]])
 
@@ -133,7 +134,8 @@ def evaluate_landing_dispersion(
 
     return {
         "site_id": site_id,
-        "provenance": "Derived from measured NASA LOLA 80 m terrain and NASA/JPL SPICE; not a certified landing safety estimate",
+        "provenance": {**provenance(),'time_range_unix':[start_unix,end_unix],
+            'method':'Deterministic spatial rings, 80 m terrain, hourly temporal sampling; not a landing survival probability'},
         "site_name": site_info["name"],
         "dispersion_parameters": {
             "semi_major_axis_m": semi_major_m,

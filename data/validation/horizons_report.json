@@ -1,0 +1,164 @@
+{
+  "retrieved_at_utc": "2026-11-15T06:23:34.460832+00:00",
+  "source": "NASA/JPL Horizons observer API",
+  "queries": [
+    {
+      "file": "lola-sp-001-sun-horizons.json",
+      "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2745.03113900753911%2C-86.56848542390216%2C2.216%27&START_TIME=%272027-01-01+00%3A00%27&STOP_TIME=%272027-01-01+02%3A00%27&STEP_SIZE=%271+h%27&QUANTITIES=%274%2C13%2C20%27&CSV_FORMAT=%27YES%27&EXTRA_PREC=%27YES%27&OBJ_DATA=%27NO%27",
+      "frame_note": "Horizons DE441 / MEAN_ME; application DE421 / MOON_ME_DE421. Comparison is cross-ephemeris, not an exact identity."
+    },
+    {
+      "file": "lola-sp-001-earth-horizons.json",
+      "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2745.03113900753911%2C-86.56848542390216%2C2.216%27&START_TIME=%272027-01-01+00%3A00%27&STOP_TIME=%272027-01-01+02%3A00%27&STEP_SIZE=%271+h%27&QUANTITIES=%274%2C13%2C20%27&CSV_FORMAT=%27YES%27&EXTRA_PREC=%27YES%27&OBJ_DATA=%27NO%27",
+      "frame_note": "Horizons DE441 / MEAN_ME; application DE421 / MOON_ME_DE421. Comparison is cross-ephemeris, not an exact identity."
+    },
+    {
+      "file": "lola-sp-002-sun-horizons.json",
+      "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27338.50995716625135%2C-86.2600970191694%2C2.1085%27&START_TIME=%272027-01-01+00%3A00%27&STOP_TIME=%272027-01-01+02%3A00%27&STEP_SIZE=%271+h%27&QUANTITIES=%274%2C13%2C20%27&CSV_FORMAT=%27YES%27&EXTRA_PREC=%27YES%27&OBJ_DATA=%27NO%27",
+      "frame_note": "Horizons DE441 / MEAN_ME; application DE421 / MOON_ME_DE421. Comparison is cross-ephemeris, not an exact identity."
+    },
+    {
+      "file": "lola-sp-002-earth-horizons.json",
+      "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27338.50995716625135%2C-86.2600970191694%2C2.1085%27&START_TIME=%272027-01-01+00%3A00%27&STOP_TIME=%272027-01-01+02%3A00%27&STEP_SIZE=%271+h%27&QUANTITIES=%274%2C13%2C20%27&CSV_FORMAT=%27YES%27&EXTRA_PREC=%27YES%27&OBJ_DATA=%27NO%27",
+      "frame_note": "Horizons DE441 / MEAN_ME; application DE421 / MOON_ME_DE421. Comparison is cross-ephemeris, not an exact identity."
+    }
+  ],
+  "comparisons": [
+    {
+      "site_id": "lola-sp-001",
+      "body": "sun",
+      "utc": "2027-01-01T00:00:00+00:00",
+      "horizons_azimuth_deg": 218.096947269,
+      "horizons_elevation_deg": -1.687116773,
+      "calculated_azimuth_deg": 218.09694276457788,
+      "calculated_elevation_deg": -1.6871088087623582,
+      "azimuth_error_deg": 4.504422122408869e-06,
+      "elevation_error_deg": 7.96423764182208e-06
+    },
+    {
+      "site_id": "lola-sp-001",
+      "body": "sun",
+      "utc": "2027-01-01T01:00:00+00:00",
+      "horizons_azimuth_deg": 217.590347144,
+      "horizons_elevation_deg": -1.706411525,
+      "calculated_azimuth_deg": 217.59034264733435,
+      "calculated_elevation_deg": -1.7064036425955724,
+      "azimuth_error_deg": 4.4966656389533455e-06,
+      "elevation_error_deg": 7.882404427617118e-06
+    },
+    {
+      "site_id": "lola-sp-001",
+      "body": "sun",
+      "utc": "2027-01-01T02:00:00+00:00",
+      "horizons_azimuth_deg": 217.083722493,
+      "horizons_elevation_deg": -1.725492096,
+      "calculated_azimuth_deg": 217.08371800425994,
+      "calculated_elevation_deg": -1.725484296688255,
+      "azimuth_error_deg": 4.488740074748421e-06,
+      "elevation_error_deg": 7.799311744882687e-06
+    },
+    {
+      "site_id": "lola-sp-001",
+      "body": "earth",
+      "utc": "2027-01-01T00:00:00+00:00",
+      "horizons_azimuth_deg": 322.324970409,
+      "horizons_elevation_deg": -3.53639998,
+      "calculated_azimuth_deg": 322.32496422884566,
+      "calculated_elevation_deg": -3.536367805421358,
+      "azimuth_error_deg": 6.180154343837785e-06,
+      "elevation_error_deg": 3.217457864224116e-05
+    },
+    {
+      "site_id": "lola-sp-001",
+      "body": "earth",
+      "utc": "2027-01-01T01:00:00+00:00",
+      "horizons_azimuth_deg": 322.304885516,
+      "horizons_elevation_deg": -3.564945435,
+      "calculated_azimuth_deg": 322.30487933819387,
+      "calculated_elevation_deg": -3.564913351473489,
+      "azimuth_error_deg": 6.177806142204645e-06,
+      "elevation_error_deg": 3.208352651062896e-05
+    },
+    {
+      "site_id": "lola-sp-001",
+      "body": "earth",
+      "utc": "2027-01-01T02:00:00+00:00",
+      "horizons_azimuth_deg": 322.284303195,
+      "horizons_elevation_deg": -3.592974768,
+      "calculated_azimuth_deg": 322.28429701934823,
+      "calculated_elevation_deg": -3.5929427761434134,
+      "azimuth_error_deg": 6.17565177662982e-06,
+      "elevation_error_deg": 3.199185658653292e-05
+    },
+    {
+      "site_id": "lola-sp-002",
+      "body": "sun",
+      "utc": "2027-01-01T00:00:00+00:00",
+      "horizons_azimuth_deg": 284.51185307,
+      "horizons_elevation_deg": 1.954336162,
+      "calculated_azimuth_deg": 284.5118482966493,
+      "calculated_elevation_deg": 1.9543440005853923,
+      "azimuth_error_deg": 4.773350667619525e-06,
+      "elevation_error_deg": 7.838585392327957e-06
+    },
+    {
+      "site_id": "lola-sp-002",
+      "body": "sun",
+      "utc": "2027-01-01T01:00:00+00:00",
+      "horizons_azimuth_deg": 284.005875433,
+      "horizons_elevation_deg": 1.921613528,
+      "calculated_azimuth_deg": 284.005870665574,
+      "calculated_elevation_deg": 1.9216212823510341,
+      "azimuth_error_deg": 4.767426048601919e-06,
+      "elevation_error_deg": 7.754351034172657e-06
+    },
+    {
+      "site_id": "lola-sp-002",
+      "body": "sun",
+      "utc": "2027-01-01T02:00:00+00:00",
+      "horizons_azimuth_deg": 283.499900625,
+      "horizons_elevation_deg": 1.888821583,
+      "calculated_azimuth_deg": 283.49989586433867,
+      "calculated_elevation_deg": 1.8888292528530488,
+      "azimuth_error_deg": 4.76066134069697e-06,
+      "elevation_error_deg": 7.669853048897224e-06
+    },
+    {
+      "site_id": "lola-sp-002",
+      "body": "earth",
+      "utc": "2027-01-01T00:00:00+00:00",
+      "horizons_azimuth_deg": 28.539219418,
+      "horizons_elevation_deg": -2.966110708,
+      "calculated_azimuth_deg": 28.539213738944245,
+      "calculated_elevation_deg": -2.9660781221562083,
+      "azimuth_error_deg": 5.67905576076555e-06,
+      "elevation_error_deg": 3.258584379173257e-05
+    },
+    {
+      "site_id": "lola-sp-002",
+      "body": "earth",
+      "utc": "2027-01-01T01:00:00+00:00",
+      "horizons_azimuth_deg": 28.517236409,
+      "horizons_elevation_deg": -2.993226057,
+      "calculated_azimuth_deg": 28.517230730584966,
+      "calculated_elevation_deg": -2.9931935613793734,
+      "azimuth_error_deg": 5.678415021748151e-06,
+      "elevation_error_deg": 3.249562062679345e-05
+    },
+    {
+      "site_id": "lola-sp-002",
+      "body": "earth",
+      "utc": "2027-01-01T02:00:00+00:00",
+      "horizons_azimuth_deg": 28.494792773,
+      "horizons_elevation_deg": -3.019792748,
+      "calculated_azimuth_deg": 28.494787094449904,
+      "calculated_elevation_deg": -3.0197603452613286,
+      "azimuth_error_deg": 5.678550110133074e-06,
+      "elevation_error_deg": 3.240273867133325e-05
+    }
+  ],
+  "acceptance_tolerance_deg": 0.02,
+  "maximum_direction_error_deg": 3.258584379173257e-05,
+  "passed": true,
+  "scope": "12 Sun/Earth topocentric direction checks, two measured locations, three UTC epochs on 2027-01-01; no terrain or power validation is implied."
+}

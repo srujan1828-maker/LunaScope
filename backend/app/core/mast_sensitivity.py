@@ -9,6 +9,7 @@ from app.core.horizon import compute_horizon_360
 from app.core.ephemeris import compute_ephemeris_track
 from app.core.visibility import fractional_solar_visibility, evaluate_dte_visibility, compute_interval_metrics
 from app.data.sites_catalog import get_site_by_id
+from app.core.nasa_data import provenance
 
 
 def evaluate_mast_sensitivity(
@@ -43,7 +44,7 @@ def evaluate_mast_sensitivity(
             base_elevation_m=site_info["elevation_m"],
             mast_height_m=h
         )
-        f_sun = fractional_solar_visibility(eph["sun_azimuth"], eph["sun_elevation"], horizon)
+        f_sun = fractional_solar_visibility(eph["sun_azimuth"], eph["sun_elevation"], horizon,angular_radius_deg=eph['solar_angular_radius_deg'])
         c_dte = evaluate_dte_visibility(eph["earth_azimuth"], eph["earth_elevation"], horizon)
         m = compute_interval_metrics(f_sun, c_dte, sample_hours=[max(0,min(3600,end_unix-t))/3600 for t in eph["timestamps"]])
 
@@ -63,7 +64,8 @@ def evaluate_mast_sensitivity(
 
     return {
         "site_id": site_id,
-        "provenance": "Derived from measured NASA LOLA 80 m terrain and NASA/JPL SPICE; not a certified landing safety estimate",
+        "provenance": {**provenance(),'time_range_unix':[start_unix,end_unix],
+            'method':'Spherical horizon recalculated at each mast height; hourly temporal sampling'},
         "site_name": site_info["name"],
         "baseline_mast_m": min(mast_heights) if mast_heights else 0.5,
         "sweep": sweep_results

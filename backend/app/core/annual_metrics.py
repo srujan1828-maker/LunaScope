@@ -13,7 +13,7 @@ def annual_statistics(year):
     for site in get_sites_catalog():
         h=compute_horizon_360(site['lat_deg'],site['lon_deg'],mast_height_m=2)
         track=compute_ephemeris_track(site['lat_deg'],site['lon_deg'],start,end)
-        sun=fractional_solar_visibility(track['sun_azimuth'],track['sun_elevation'],h)
+        sun=fractional_solar_visibility(track['sun_azimuth'],track['sun_elevation'],h,angular_radius_deg=track['solar_angular_radius_deg'])
         earth=evaluate_dte_visibility(track['earth_azimuth'],track['earth_elevation'],h)
         durations=[max(0,min(3600,end-t))/3600 for t in track['timestamps']]
         metrics=compute_interval_metrics(sun,earth,sample_hours=durations)

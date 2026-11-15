@@ -65,6 +65,7 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
           </button>
         </div>
 
+        <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={powerConfig.enabled} onChange={e=>onUpdatePowerConfig({...powerConfig,enabled:e.target.checked})}/> Enable configurable electrical model</label>
         {/* Sliders Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
           {/* Panel Area */}
@@ -131,9 +132,23 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
           </div>
         </div>
 
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
+          <label className="field">Panel configuration<select aria-label="Power panel orientation" value={powerConfig.panel_orientation} onChange={e=>onUpdatePowerConfig({...powerConfig,panel_orientation:e.target.value})}><option value="tracking">Vertical panel · azimuth tracking</option><option value="fixed_vertical">Vertical panel · fixed azimuth</option></select></label>
+          {([
+            ['panel_efficiency','Panel efficiency',.28,.01,1,.01],['fixed_azimuth_deg','Fixed azimuth (degrees)',0,0,360,1],
+            ['derating_factor','Derating factor',.85,.01,1,.01],['charge_efficiency','Charging efficiency',.92,.01,1,.01],
+            ['discharge_efficiency','Discharging efficiency',.95,.01,1,.01],['initial_soc_pct','Initial battery charge (%)',100,0,100,1],
+            ['reserve_margin_pct','Required reserve (%)',20,0,100,1]
+          ] as const).map(([key,label,fallback,min,max,step])=><label className="field" key={key}>{label}<input type="number" aria-label={label} value={powerConfig[key]??fallback} min={min} max={max} step={step} onChange={e=>{const v=e.target.valueAsNumber;if(Number.isFinite(v)&&v>=min&&v<=max)onUpdatePowerConfig({...powerConfig,[key]:v});}}/></label>)}
+        </div>
         {/* Results & Metrics */}
         {powerSim ? (
           <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-3 gap-3 text-xs">
+              <div>Estimated generation<strong className="block mt-2 text-emerald-300">{powerSim.summary.total_generated_wh.toFixed(1)} Wh</strong></div>
+              <div>Load energy<strong className="block mt-2 text-cyan-300">{powerSim.summary.total_consumed_wh.toFixed(1)} Wh</strong></div>
+              <div>Longest zero generation<strong className="block mt-2 text-amber-300">{powerSim.summary.longest_without_generation_hours.toFixed(2)} h</strong></div>
+            </div>
             {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex flex-col gap-1">
@@ -157,7 +172,7 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
                 <span className="text-lg font-bold font-mono text-cyan-300">
                   {powerSim.summary.reserve_breach_hours.toFixed(1)} h
                 </span>
-                <span className="text-[10px] text-slate-500 font-mono">below 20% reserve</span>
+                <span className="text-[10px] text-slate-500 font-mono">below {powerConfig.reserve_margin_pct}% reserve</span>
               </div>
 
               <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex flex-col gap-1">
@@ -173,7 +188,7 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
               </div>
 
               <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl flex flex-col gap-1">
-                <span className="text-[11px] text-slate-400">Survival Status</span>
+                <span className="text-[11px] text-slate-400">Electrical load balance</span>
                 {powerSim.summary.total_unmet_demand_wh === 0 ? (
                   <span className="text-xs font-semibold text-emerald-300 flex items-center gap-1 mt-1">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -196,8 +211,8 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
               </span>
               <div className="h-28 w-full">
                 <svg viewBox="0 0 600 100" className="w-full h-full">
-                  <line x1="0" y1="80" x2="600" y2="80" stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3 3" />
-                  <text x="5" y="76" fill="#ef4444" fontSize="8" fontFamily="monospace">20% Reserve Margin</text>
+                  <line x1="0" y1={100-powerConfig.reserve_margin_pct} x2="600" y2={100-powerConfig.reserve_margin_pct} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3 3" />
+                  <text x="5" y={96-powerConfig.reserve_margin_pct} fill="#ef4444" fontSize="8" fontFamily="monospace">{powerConfig.reserve_margin_pct}% reserve requirement</text>
                   
                   {/* SoC polyline */}
                   <polyline
@@ -205,7 +220,7 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
                     stroke="#10b981"
                     strokeWidth="1.5"
                     points={powerSim.time_series.battery_soc_pct
-                      .map((soc, i, arr) => `${(i / Math.max(1, arr.length - 1)) * 600},${100 - soc}`)
+                      .map((soc, i, arr) => `${((primaryData.timestamps[i]-primaryData.timestamps[0]) / Math.max(1, primaryData.timestamps[arr.length-1]-primaryData.timestamps[0])) * 600},${100 - soc}`)
                       .join(' ')}
                   />
                 </svg>
@@ -218,7 +233,7 @@ export const PowerSimulationDrawer: React.FC<PowerSimulationDrawerProps> = ({
           </div>
         ) : (
           <div className="p-6 bg-slate-900/40 border border-slate-800 rounded-xl text-center text-xs text-slate-400">
-            Evaluating power model against current mission horizon...
+            {powerConfig.enabled?'Evaluating the electrical model over the configured mission window…':'Electrical model is disabled. Terrain and sky geometry remain available.'}
           </div>
         )}
       </div>

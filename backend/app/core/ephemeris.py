@@ -6,8 +6,8 @@ from app.core.spice_geometry import body_vectors,subpoint,topocentric_track
 from app.core.nasa_data import elevation
 AU_METERS=149597870700.0
 R_MOON=1737400.0
-R_SUN_METERS=696340000.0
-R_EARTH_METERS=6371000.0
+R_SUN_METERS=695700000.0
+R_EARTH_METERS=6378137.0
 MEAN_LUNAR_DIST_METERS=384400000.0
 SOLAR_RADIUS_DEG=.266
 EARTH_RADIUS_DEG=.950
@@ -28,6 +28,10 @@ def compute_ephemeris_track(site_lat_deg,site_lon_deg,start_unix,end_unix,step_s
     if not all(math.isfinite(v) for v in [start_unix,end_unix,step_seconds]) or step_seconds<=0 or end_unix<start_unix:
         raise ValueError('Invalid ephemeris interval')
     times=tuple(np.arange(start_unix,end_unix+1e-3,step_seconds).tolist())
+    return ephemeris_at_times(site_lat_deg,site_lon_deg,times,site_elevation_m)
+
+def ephemeris_at_times(site_lat_deg,site_lon_deg,times,site_elevation_m=None):
+    times=tuple(float(t) for t in times)
     sun,earth=body_vectors(times)
     height=elevation(site_lat_deg,site_lon_deg) if site_elevation_m is None else site_elevation_m
     saz,sel,sd=topocentric_track(site_lat_deg,site_lon_deg,height,sun)
@@ -36,4 +40,5 @@ def compute_ephemeris_track(site_lat_deg,site_lon_deg,start_unix,end_unix,step_s
         'earth_azimuth':eaz.tolist(),'earth_elevation':eel.tolist(),
         'solar_flux_w_m2':(1361/(sd/AU_METERS)**2).tolist(),
         'solar_angular_radius_deg':np.degrees(np.arcsin(R_SUN_METERS/sd)).tolist(),
-        'earth_distance_m':ed.tolist(),'frame':'MOON_ME_DE421','aberration_correction':'LT+S'}
+        'earth_distance_m':ed.tolist(),'earth_angular_radius_deg':np.degrees(np.arcsin(R_EARTH_METERS/ed)).tolist(),
+        'frame':'MOON_ME_DE421','aberration_correction':'LT+S'}

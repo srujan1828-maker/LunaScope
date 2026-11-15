@@ -1,0 +1,17 @@
+.git
+.venv
+venv
+.science-deps
+**/__pycache__
+.pytest_cache
+frontend/node_modules
+frontend/dist
+data/nasa
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+**/*.part
+outputs
+work

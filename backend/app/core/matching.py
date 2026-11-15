@@ -31,6 +31,11 @@ def match_sites(req: MatchRequest):
         payload['site_ids'] = [sid]
         result = evaluate_scenario(EvaluateScenarioRequest(**payload))['evaluated_sites'][sid]
         m = result['interval_metrics']
+        if m['coverage']!='complete':
+            rows.append({'site_id':sid,'name':result['site_info']['name'],'passed':False,'status':'Unknown','score':0,
+                'metrics':m,'violations':['Incomplete data: visibility unknown'],'explanation':'Missing terrain or time coverage; cannot pass',
+                'terrain_safety':'unknown','power_summary':None})
+            continue
         longest = current = 0.0
         for f, hours in zip(result['solar_fractions'], result['sample_hours']):
             current = current + hours if f >= req.sun_threshold else 0.0
@@ -62,4 +67,4 @@ def match_sites(req: MatchRequest):
             'inputs': req.model_dump(), 'rankings': rows, 'evaluated_count': len(rows), 'passing_count': len(passing),
             'recommended_primary': recommended, 'backup_sites': [r for r in passing if not recommended or r['site_id'] != recommended['site_id']],
             'provenance': provenance(),
-            'sampling': 'Hourly left-endpoint intervals, clipped at mission end; transitions may differ by up to one sample.'}
+            'sampling': '10-minute baseline, adaptive changed-state and solar-limb refinement to 30-second brackets; shorter unsampled interruptions remain possible.'}

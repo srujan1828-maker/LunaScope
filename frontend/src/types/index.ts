@@ -49,9 +49,17 @@ export interface PowerConfig {
   battery_capacity_wh: number;
   initial_soc_pct: number;
   reserve_margin_pct: number;
+  fixed_azimuth_deg?:number;
+  derating_factor?:number;
+  charge_efficiency?:number;
+  discharge_efficiency?:number;
 }
 
 export interface PowerSimulationSummary {
+  total_generated_wh:number;
+  total_consumed_wh:number;
+  longest_without_generation_hours:number;
+  reserve_requirement_wh:number;
   min_soc_pct: number;
   min_energy_wh: number;
   total_unmet_demand_wh: number;
@@ -116,6 +124,7 @@ export interface CandidateWindow {
 }
 
 export interface WindowSearchResult {
+  provenance?:any;
   search_parameters: any;
   total_evaluated_windows: number;
   passing_windows_count: number;

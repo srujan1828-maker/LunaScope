@@ -32,6 +32,7 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
   const [searchEnd, setSearchEnd] = useState('2027-02-15T00:00:00Z');
   const [durationDays, setDurationDays] = useState(7.0);
   const [priority, setPriority] = useState('balanced');
+  const [strideHours,setStrideHours]=useState(12);
 
   // Hard constraints
   const [minSunPct, setMinSunPct] = useState(65.0);
@@ -55,7 +56,7 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
         search_start_iso: searchStart,
         search_end_iso: searchEnd,
         mission_duration_days: durationDays,
-        stride_hours: 12.0,
+        stride_hours: strideHours,
         min_sun_pct: minSunPct,
         max_shadow_gap_hours: maxShadowGapHours,
         min_earth_pct: minEarthPct,
@@ -86,7 +87,7 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
                 Find Better Surface Operation Windows
               </h2>
               <p className="text-xs text-slate-400">
-                Slide mission interval across candidate start dates & rank non-dominated trade-offs
+                Apply hard constraints across full mission durations, then rank by your priority
               </p>
             </div>
           </div>
@@ -126,9 +127,9 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
             </label>
             <input
               type="range"
-              min="3"
-              max="21"
-              step="1"
+              min="1"
+              max="30"
+              step=".25"
               value={durationDays}
               onChange={(e) => setDurationDays(Number(e.target.value))}
               className="mt-2"
@@ -167,6 +168,13 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
           </div>
         </div>
 
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {([
+            ['Minimum sunlight (%)',minSunPct,setMinSunPct,0,100],['Maximum shadow gap (h)',maxShadowGapHours,setMaxShadowGapHours,0,200],
+            ['Minimum Earth-center visibility (%)',minEarthPct,setMinEarthPct,0,100],['Maximum Earth outage (h)',maxEarthOutageHours,setMaxEarthOutageHours,0,200],
+            ['Minimum joint visibility (%)',minJointPct,setMinJointPct,0,100],['Candidate start stride (h)',strideHours,setStrideHours,1,48]
+          ] as const).map(([label,value,set,min,max])=><label className="field" key={label}>{label}<input type="number" aria-label={label} value={value} min={min} max={max} step=".25" onChange={e=>{const n=e.target.valueAsNumber;if(Number.isFinite(n)&&n>=min&&n<=max)set(n);}}/></label>)}
+        </div>
         <button
           onClick={handleSearch}
           disabled={isLoading}
@@ -195,7 +203,7 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
               <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
               <div>
                 <span className="font-semibold block mb-0.5">Evaluated {result.total_evaluated_windows} candidate windows:</span>
-                <span>{result.explanation}</span>
+                <span>{result.explanation}</span><p className="mt-2">Ten-minute baseline; detected transitions refined to 30-second brackets. Shorter unsampled events may be missed. Applying a window updates its UTC start and duration; the planner then evaluates its own configured constraints.</p>
               </div>
             </div>
 
@@ -226,7 +234,7 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
                         <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 mt-1 font-mono">
                           {Object.entries(win.site_evaluations).map(([sid, se]) => (
                             <span key={sid} className="flex items-center gap-1.5">
-                              <span className="text-slate-300 font-sans">{se.site_name.split(' ')[0]}:</span>
+                              <span className="text-slate-300 font-sans">{se.site_name}:</span>
                               <span className="text-amber-300">{se.metrics.sun_availability_pct}% Sun</span>
                               <span className="text-slate-600">|</span>
                               <span className="text-cyan-300">{se.metrics.earth_availability_pct}% DTE</span>
@@ -252,6 +260,8 @@ export const WindowFinderModal: React.FC<WindowFinderModalProps> = ({
                 ))
               )}
             </div>
+            <details className="text-xs text-slate-400"><summary>Transparent ranking formula</summary><p className="mt-2">{result.provenance?.ranking||'Hard constraints first, then the selected priority score.'}</p></details>
+            {result.alternative_windows.length>0&&<section className="flex flex-col gap-3"><h3 className="text-xs text-amber-300">Closest alternatives — constraints remain unmet or unknown</h3>{result.alternative_windows.map((win,i)=><article key={win.start_time_iso} className="p-3 border border-slate-800 rounded-xl text-xs"><strong>{win.start_time_iso.slice(0,16)} UTC · score {win.composite_score}</strong>{Object.entries(win.site_evaluations).map(([id,se])=><p className="mt-2 text-slate-400" key={id}>{se.site_name}: {se.passed?'Pass':se.metrics.coverage==='unknown'?'Unknown':'Fail'} — {se.violations.length?se.violations.join('; '):'Meets configured window constraints'}</p>)}</article>)}</section>}
           </div>
         )}
       </div>

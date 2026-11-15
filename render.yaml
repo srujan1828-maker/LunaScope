@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: lunascope
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/ready
+    autoDeployTrigger: "off"
+    disk:
+      name: nasa-data
+      mountPath: /app/data/nasa
+      sizeGB: 1
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: LUNASCOPE_DATA_DIR
+        value: /app/data/nasa
+      - key: LUNASCOPE_AUTO_FETCH
+        value: "true"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
