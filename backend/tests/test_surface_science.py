@@ -42,6 +42,8 @@ def test_compass_rotation_and_pole_meridian():
     p=horizon.horizon_profile(-90,90)
     assert p['reference_meridian_deg']==90
     assert p['obstruction_points'][0]['lon_deg']==pytest.approx(90,abs=1e-7)
+    for azimuth in [0,90,180,270]:
+        assert p['obstruction_points'][azimuth]['lon_deg']==pytest.approx((90+azimuth)%360,abs=1e-7)
 
 
 def test_disk_integrates_varying_horizon_and_wraps_without_filling_unknown():

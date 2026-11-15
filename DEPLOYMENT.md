@@ -45,10 +45,10 @@ With automatic fetching disabled, install the same release's official inputs and
 
 ## Verification boundary
 
-The repository includes a GitHub Actions workflow that runs scientific tests, builds the frontend and Docker image, then exercises container readiness and a surface frame. Its actual run result must be checked in GitHub Actions. Local Compose configuration can be checked without starting a container:
+The repository includes a GitHub Actions workflow that runs scientific tests, builds the frontend and Docker image, then exercises container readiness and a surface frame. The [implementation verification run](https://github.com/srujan1828-maker/LunaScope/actions/runs/43688943898) passed dependency setup, NASA ingestion, scientific tests, frontend build, production image build and container smoke testing on Linux. Check newer runs for subsequent commits. Local Compose configuration can be checked without starting a container:
 
 ```powershell
 docker compose config --quiet
 ```
 
-The initial local image build could not run because Docker Desktop's Linux engine was not running. Do not interpret configuration validation as a tested cloud deployment. Consult [Render Docker documentation](https://render.com/docs/docker), [Render Blueprint specification](https://render.com/docs/blueprint-spec) and [Railway configuration reference](https://docs.railway.com/config-as-code/reference) for provider setup.
+The local Docker engine was stopped; image/build validation was completed on GitHub's Linux runner instead. This verifies the container, while a live hosted deployment remains a separate step. Consult [Render Docker documentation](https://render.com/docs/docker), [Render Blueprint specification](https://render.com/docs/blueprint-spec) and [Railway configuration reference](https://docs.railway.com/config-as-code/reference) for provider setup.

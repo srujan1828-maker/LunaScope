@@ -25,4 +25,4 @@ Rendering will remain a visualization approximation: shadow-map resolution and t
 
 ## External limits
 
-The 5 m PGDA server was unreachable (connection timeouts). The metadata/NoData/uncertainty ingestion pipeline is implemented and tested with isolated fixtures; the actual scene uses the installed official 80 m PDS terrain. JPL Horizons was reachable and its twelve comparisons passed. Docker configuration and cloud startup were checked, but the Docker Linux engine was not running, so no local image build or live cloud deployment is claimed.
+The 5 m PGDA server was unreachable (connection timeouts). The metadata/NoData/uncertainty ingestion pipeline is implemented and tested with isolated fixtures; the actual scene uses the installed official 80 m PDS terrain. JPL Horizons was reachable and its twelve comparisons passed. The local Docker engine was stopped, but [Linux CI](https://github.com/srujan1828-maker/LunaScope/actions/runs/43688943898) subsequently passed the production-image build and container smoke test. No live hosted deployment has been created.

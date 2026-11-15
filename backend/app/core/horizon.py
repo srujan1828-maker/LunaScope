@@ -3,7 +3,7 @@ from functools import lru_cache
 import math
 import numpy as np
 from app.core.nasa_data import R_MOON,DataUnavailable
-from app.core.terrain import combined_elevation,finite_list,source_info
+from app.core.terrain import combined_elevation,finite_list,source_info,basis
 
 
 def evaluate_lunar_terrain_elevation(lat_deg,lon_deg,base_elev_m=None):
@@ -19,9 +19,12 @@ def horizon_profile(lat,lon,mast=2.,max_distance=150000.,step=500.,source='lola8
     resolution=source_info(source)['pixel_scale_m'];near=max(5.,min(80.,resolution))
     d=np.unique(np.r_[np.arange(near,min(8000,max_distance),near),np.arange(8000,max_distance,step),max_distance])
     angular=d[None,:]/R_MOON;bearing=np.radians(np.arange(360))[:,None]
-    phi,lam=np.radians([lat,lon])
-    ray_lat=np.arcsin(np.clip(np.sin(phi)*np.cos(angular)+np.cos(phi)*np.sin(angular)*np.cos(bearing),-1,1))
-    ray_lon=lam+np.arctan2(np.sin(bearing)*np.sin(angular)*np.cos(phi),np.cos(angular)-np.sin(phi)*np.sin(ray_lat))
+    # Vector great circles avoid the singular longitude formula at either pole.
+    east,north,up=basis(lat,lon)
+    direction=np.cos(bearing)*north+np.sin(bearing)*east
+    rays=np.cos(angular)[...,None]*up+np.sin(angular)[...,None]*direction[:,None,:]
+    ray_lat=np.arcsin(np.clip(rays[...,2],-1,1))
+    ray_lon=np.arctan2(rays[...,1],rays[...,0])
     latitudes,longitudes=np.degrees(ray_lat),np.degrees(ray_lon)%360
     ground=combined_elevation(latitudes,longitudes,source)
     observer=float(combined_elevation(lat,lon,source))

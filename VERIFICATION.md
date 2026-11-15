@@ -39,7 +39,7 @@ LOLA pixel scale is 80 m. Gridded altimetry and derived regional slopes do not c
 
 ## Surface upgrade: measured checks
 
-- Final combined run: `python -m pytest backend/tests -q` — **64 passed**, one third-party Starlette/httpx deprecation warning, **59.29 seconds**.
+- Final combined run after the exact-pole follow-up: `python -m pytest backend/tests -q` — **64 passed**, one third-party Starlette/httpx deprecation warning, **144.01 seconds**. The preceding complete run also passed all 64 tests in 59.29 seconds; timings vary with local load.
 - Production frontend build passed styles, strict TypeScript and Vite. The Three.js explorer is lazy-loaded separately. Vite reports the expected large 3D chunk warning; its compressed payload is approximately 145 kB. The Browserslist database update notice is unrelated to build correctness.
 - New scientific regressions cover isolated flat/ridge/crater/missing landscapes, pole-meridian/ENU conventions, 0°/360° disk integration, Unknown propagation, original-raster mesh heights and scale, scene-vector/reading agreement, adaptive transition brackets, partial operation durations, GeoTIFF metadata/window/NoData behavior, incompatible kernel types and power efficiency accounting.
 - The original suite and new window tests passed together (63 tests). An added kernel-type regression then exposed that SPICE can accept a non-kernel text file without an exception while previously loaded frames remain in its pool. The loader now checks each file's actual architecture/type before loading it; all 13 surface-science tests passed after that fix. The final combined rerun is recorded below.
@@ -55,9 +55,13 @@ LOLA pixel scale is 80 m. Gridded altimetry and derived regional slopes do not c
 - Render `render.yaml`: passed validation against the provider's published JSON schema.
 - Railway schema download: HTTP 403; the checked-in JSON follows the documented configuration fields, but provider validation is not claimed.
 - Cloud-style launcher with `PORT=8001`, existing NASA inputs and fetching disabled: official-input setup, `/api/live`, `/api/ready`, `/api/health` and `/api/surface/frame` passed locally. A Windows path-with-spaces launcher issue was fixed and the launcher rerun successfully.
-- Docker image build was not run because Docker Desktop's Linux engine was stopped (missing dockerDesktopLinuxEngine pipe). The GitHub Actions workflow builds and smoke-tests the image on a Linux Docker runner when executed. A live cloud deployment is not claimed.
+- The local Docker Linux engine was stopped (missing dockerDesktopLinuxEngine pipe), so image verification ran in [GitHub Actions](https://github.com/srujan1828-maker/LunaScope/actions/runs/43688943898). Scientific/API tests, frontend build, production-image build and container readiness/frontend/surface smoke tests all passed on Linux for implementation commit 074af8f. No live hosted cloud service has been created.
 - NASA PGDA 5 m surface/uncertainty downloads timed out. The application uses the installed 80 m official PDS grid. Optional GeoTIFF/uncertainty ingestion has automated metadata/NoData tests; no unavailable 5 m result is represented as present.
 
 ## Practical scientific limits
 
 The 3D mesh is sampled and triangulated from the real raster without invented detail. Its displayed spacing can be coarser than the source pixel scale. Shadow maps cover the displayed crop and use approximate point-Sun/soft-shadow rendering; an optional inspection fill light is explicitly a viewing aid. Numerical visibility separately uses sampled regional rays. A ten-minute baseline with 30-second refinement around detected transitions can still miss shorter interruptions. Earth phase is a spherical model, not a weather observation. Annual, mast and dispersion summaries retain hourly temporal sampling. No short animation establishes a permanently shadowed region.
+
+## Exact-pole regression follow-up
+
+The horizon destination calculation now uses observer ENU unit vectors rotated along great circles instead of the longitude formula that becomes singular at the exact pole. The pole test checks all four cardinal bearings against the selected reference meridian. All 13 surface-science tests and the complete 64-test suite passed after this change. The restarted local surface API also passed the four-bearing pole check.

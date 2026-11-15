@@ -99,7 +99,7 @@ The recorded checks cover two measured locations and three UTC epochs on 2027-01
 
 ## Cloud deployment
 
-The Dockerfile builds the frontend and runs one same-origin API/WebSocket service. Compose, Render and Railway configuration, persistent NASA-data storage, automatic verified scientific-data setup, readiness/liveness checks and CI image smoke testing are included. See [DEPLOYMENT.md](DEPLOYMENT.md) for commands, environment settings and validation limits. Docker Desktop's engine was not running locally, so the production image build and a live cloud deployment remain unverified. No cloud service has been created.
+The Dockerfile builds the frontend and runs one same-origin API/WebSocket service. Compose, Render and Railway configuration, persistent NASA-data storage, automatic verified scientific-data setup, readiness/liveness checks and CI image smoke testing are included. See [DEPLOYMENT.md](DEPLOYMENT.md) for commands, environment settings and validation limits. Docker Desktop's local engine was stopped, but [Linux CI](https://github.com/srujan1828-maker/LunaScope/actions/runs/43688943898) successfully built the production image and passed its readiness/frontend/surface smoke tests. A live hosted deployment has not been created.
 
 See [UPGRADE_REPORT.md](UPGRADE_REPORT.md) for the audit, implementation details, actual data, approximation boundaries, access limitations, exact Windows setup and complete changed-file list.
 
