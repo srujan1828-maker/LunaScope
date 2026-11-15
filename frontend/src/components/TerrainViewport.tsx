@@ -18,15 +18,15 @@ export function TerrainViewport({mesh,frame,onPick,view,colored,inspectionLight}
     const scene=new THREE.Scene();scene.background=new THREE.Color('#03060b');
     const camera=new THREE.PerspectiveCamera(48,1,.0001,1e7);camera.position.set(4,3,5);
     const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=.0005;controls.maxDistance=150;
-    const fill=new THREE.AmbientLight(0xa1adc7,.7);scene.add(fill);
+    const fill=new THREE.AmbientLight(0xffffff,.35);scene.add(fill);
     const sunlight=new THREE.DirectionalLight(0xfff3d6,3);sunlight.castShadow=true;sunlight.shadow.mapSize.set(2048,2048);
-    sunlight.shadow.camera.near=.1;sunlight.shadow.camera.far=150;sunlight.shadow.normalBias=.002;sunlight.shadow.bias=-.00001;
+    sunlight.shadow.camera.near=.1;sunlight.shadow.camera.far=150;sunlight.shadow.normalBias=.03;sunlight.shadow.bias=-.0005;
     scene.add(sunlight);scene.add(sunlight.target);
-    const terrain=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshStandardMaterial({color:0xa5a5a2,roughness:1,metalness:0,side:THREE.DoubleSide}));
+    const terrain=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshStandardMaterial({color:0x96938d,roughness:1,metalness:0,side:THREE.DoubleSide,shadowSide:THREE.FrontSide}));
     terrain.receiveShadow=true;terrain.castShadow=true;scene.add(terrain);
     const sun=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0xfff1bd}));scene.add(sun);
     const earth=new THREE.Mesh(new THREE.SphereGeometry(1,48,32),new THREE.MeshStandardMaterial({color:0x4b93c8,roughness:1}));scene.add(earth);
-    const observer=new THREE.Mesh(new THREE.SphereGeometry(.03,12,8),new THREE.MeshBasicMaterial({color:0x63c9c0}));scene.add(observer);
+    const observer=new THREE.Mesh(new THREE.SphereGeometry(.006,12,8),new THREE.MeshBasicMaterial({color:0x63c9c0}));scene.add(observer);
     const axes=new THREE.Group();scene.add(axes);
     const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down={x:0,y:0};
     const press=(e:PointerEvent)=>{down={x:e.clientX,y:e.clientY};};
@@ -73,17 +73,17 @@ export function TerrainViewport({mesh,frame,onPick,view,colored,inspectionLight}
     r.terrain.geometry.dispose();r.terrain.geometry=geometry;
     const half=mesh.width_km*.8;r.sunlight.shadow.camera.left=-half;r.sunlight.shadow.camera.right=half;r.sunlight.shadow.camera.top=half;r.sunlight.shadow.camera.bottom=-half;r.sunlight.shadow.camera.updateProjectionMatrix();
     r.observer.scale.setScalar(Math.max(.1,mesh.width_km/12));
-    r.axes.traverse((o:THREE.Object3D)=>{const m=o as THREE.Mesh;m.geometry?.dispose();if(m.material&&!Array.isArray(m.material))m.material.dispose();});r.axes.clear();const length=mesh.width_km*.22;
+    r.axes.traverse((o:THREE.Object3D)=>{const m=o as THREE.Mesh;m.geometry?.dispose();if(m.material&&!Array.isArray(m.material))m.material.dispose();});r.axes.clear();const length=mesh.width_km*.065;
     for(const [direction,color] of [[new THREE.Vector3(0,0,-1),0x63c9c0],[new THREE.Vector3(1,0,0),0xd8b36a]] as const)r.axes.add(new THREE.ArrowHelper(direction,new THREE.Vector3(0,.02,0),length,color,length*.05,length*.03));
-    r.camera.position.set(mesh.width_km*.42,mesh.width_km*.30,mesh.width_km*.5);r.controls.target.set(0,0,0);r.controls.update();
+    r.camera.position.set(mesh.width_km*.38,mesh.width_km*.19,mesh.width_km*.42);r.controls.target.set(0,0,0);r.controls.update();
     r.dirty=true;
   },[mesh]);
   useEffect(()=>{const r=runtime.current;if(!r)return;r.sunlight.intensity=frame?3:0;r.sun.visible=!!frame;r.earth.visible=!!frame;if(frame){r.sunlight.position.copy(new THREE.Vector3(...frame.sun.direction_scene).multiplyScalar(55));r.observer.position.y=frame.location.mast_height_m/1000;}r.dirty=true;},[frame,mesh]);
-  useEffect(()=>{const r=runtime.current;if(!r)return;r.terrain.material.vertexColors=colored;r.terrain.material.color.set(colored?0xffffff:0xa5a5a2);r.terrain.material.needsUpdate=true;r.dirty=true;},[colored,mesh]);
-  useEffect(()=>{const r=runtime.current;if(!r)return;r.fill.intensity=inspectionLight?.7:0;r.dirty=true;},[inspectionLight]);
+  useEffect(()=>{const r=runtime.current;if(!r)return;r.terrain.material.vertexColors=colored;r.terrain.material.color.set(colored?0xffffff:0x96938d);r.terrain.material.needsUpdate=true;r.dirty=true;},[colored,mesh]);
+  useEffect(()=>{const r=runtime.current;if(!r)return;r.fill.intensity=inspectionLight ? .35 : 0;r.dirty=true;},[inspectionLight]);
   useEffect(()=>{
     const r=runtime.current;if(!r||!mesh)return;
-    if(view==='orbit'){r.camera.position.set(mesh.width_km*.42,mesh.width_km*.30,mesh.width_km*.5);r.controls.target.set(0,0,0);}
+    if(view==='orbit'){r.camera.position.set(mesh.width_km*.38,mesh.width_km*.19,mesh.width_km*.42);r.controls.target.set(0,0,0);}
     else {r.camera.position.set(0,(latest.current.frame?.location.mast_height_m??2)/1000,0);const body=view==='earth'?latest.current.frame?.earth:view==='sun'?latest.current.frame?.sun:null;
       r.controls.target.copy(r.camera.position).add(body?new THREE.Vector3(...body.direction_scene).multiplyScalar(10):new THREE.Vector3(0,.02,-10));}
     r.controls.update();

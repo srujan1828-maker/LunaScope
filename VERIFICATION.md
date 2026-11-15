@@ -65,3 +65,11 @@ The 3D mesh is sampled and triangulated from the real raster without invented de
 ## Exact-pole regression follow-up
 
 The horizon destination calculation now uses observer ENU unit vectors rotated along great circles instead of the longitude formula that becomes singular at the exact pole. The pole test checks all four cardinal bearings against the selected reference meridian. All 13 surface-science tests and the complete 64-test suite passed after this change. The restarted local surface API also passed the four-bearing pole check.
+
+## Planner selection and terrain presentation follow-up
+
+The default 2027-01-01 through 2027-01-15 window produces different measurements at all catalog points, although all thirteen fail the combined seven-day consecutive-sunlight and 50% Earth-visibility requirements. A direct matching API check found, for example, Site 01 at 52.6% Sun / 18.6% Earth / 4.76 consecutive Sun days, and Site 11 at 95.5% Sun / 0.0% Earth / 13.37 consecutive Sun days. The all-catalog summary was easy to mistake for a selected-location result.
+
+The planner now presents selected-location metrics and its actual failure explanation above the catalog summary. Opening the explorer carries the selected location into the primary scene. A Chrome regression check verified different selected measurements, correct selection transfer, a 257×257 terrain mesh and zero page errors. The frontend production build passed. Backend calculations were inspected through the API; the complete backend suite was not rerun for this frontend-only change.
+
+The terrain view uses a wider default crop, denser display mesh, lower overview camera, smaller compass markers and neutral inspection lighting. Visual inspection exposed shadow-map acne appearing as repeated bands; rendering bias/culling was adjusted and a second capture inspected. These settings affect graphical shadows, not the scientific terrain vertices, horizon calculation or numerical visibility. The 80 m source still cannot produce photographic surface detail.

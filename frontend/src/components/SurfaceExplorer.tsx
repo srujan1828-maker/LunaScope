@@ -28,14 +28,14 @@ export function ScientificHorizon({frame,compact=false}:{frame:SurfaceFrame;comp
 }
 
 export function SurfaceExplorer({state,onPower,onDispersion,onMast}:{state:MissionState;onPower:()=>void;onDispersion:()=>void;onMast:()=>void}){
-  const primary=state.sites.find(s=>s.site_id===state.primary);
+  const primary=state.sites.find(s=>s.site_id===state.selected);
   const [point,setPoint]=useState<PickedPoint|null>(null),[source,setSource]=useState('lola80'),[sources,setSources]=useState<TerrainSource[]>([]);
   const center=point||primary;
   const start=new Date(missionStart(state.mission)).getTime()/1000;
   const [time,setTime]=useState(start),[playing,setPlaying]=useState(false),[speed,setSpeed]=useState(600),[step,setStep]=useState(600);
   const [mesh,setMesh]=useState<TerrainCrop|null>(null),[frames,setFrames]=useState<Record<string,SurfaceFrame>>({});
   const [loading,setLoading]=useState(false),[terrainLoading,setTerrainLoading]=useState(false),[error,setError]=useState(''),[terrainError,setTerrainError]=useState('');
-  const [width,setWidth]=useState(12.8),[view,setView]=useState<'orbit'|'ground'|'sun'|'earth'>('orbit'),[colored,setColored]=useState(false),[compare,setCompare]=useState(false);
+  const [width,setWidth]=useState(25.6),[view,setView]=useState<'orbit'|'ground'|'sun'|'earth'>('orbit'),[colored,setColored]=useState(false),[compare,setCompare]=useState(false);
   const [picked,setPicked]=useState<PickedPoint|null>(null);const sequence=useRef(0);
   const [inspectionLight,setInspectionLight]=useState(true);
   const latitude=center?.lat_deg,longitude=center?.lon_deg,candidate=frames[state.primary];
@@ -49,7 +49,7 @@ export function SurfaceExplorer({state,onPower,onDispersion,onMast}:{state:Missi
     const load=async()=>{
       try{const query=`lat_deg=${latitude}&lon_deg=${longitude}&width_km=${width}&source=${encodeURIComponent(source)}`;
         const coarse=await json('/api/terrain/crop?'+query+'&samples=33',{signal:controller.signal});if(active)setMesh(coarse);
-        const fine=await json('/api/terrain/crop?'+query+'&samples=129',{signal:controller.signal});if(active)setMesh(fine);
+        const fine=await json('/api/terrain/crop?'+query+'&samples=257',{signal:controller.signal});if(active)setMesh(fine);
       }catch(e){if(active)setTerrainError(String(e));}finally{if(active)setTerrainLoading(false);}
     };void load();return()=>{active=false;controller.abort();};
   },[latitude,longitude,width,source]);
@@ -70,7 +70,7 @@ export function SurfaceExplorer({state,onPower,onDispersion,onMast}:{state:Missi
     const timer=setTimeout(()=>setTime(t=>t+speed*.35),350);return()=>clearTimeout(timer);
   },[playing,loading,frame,speed]);
   const chooseTime=(t:number)=>{if(Number.isFinite(t)){setPlaying(false);setTime(t);}};
-  const selectSource=(id:string)=>{const info=sources.find(s=>s.id===id);setSource(id);if(info?.center_lat_deg!=null&&info.center_lon_deg!=null){setPoint({lat_deg:info.center_lat_deg,lon_deg:info.center_lon_deg,elevation_m:0,uncertainty_m:null});setWidth(1.28);}else{setPoint(null);setWidth(12.8);}};
+  const selectSource=(id:string)=>{const info=sources.find(s=>s.id===id);setSource(id);if(info?.center_lat_deg!=null&&info.center_lon_deg!=null){setPoint({lat_deg:info.center_lat_deg,lon_deg:info.center_lon_deg,elevation_m:0,uncertainty_m:null});setWidth(1.28);}else{setPoint(null);setWidth(25.6);}};
   const download=()=>{if(!frame)return;const blob=new Blob([JSON.stringify(frame,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='lunascope-surface-reading.json';a.click();URL.revokeObjectURL(url);};
   const currentEvaluation=state.evaluation?.evaluated_sites[state.primary];
   const end=start+state.mission.days*86400;
@@ -78,7 +78,7 @@ export function SurfaceExplorer({state,onPower,onDispersion,onMast}:{state:Missi
     <section className="panel surface-explorer" aria-label="Data driven 3D lunar surface simulator">
       <div className="panel-heading"><div><span className="eyebrow">MEASURED TERRAIN / LIVE GEOMETRY</span><h3>Lunar surface explorer</h3></div><span className="data-label">1:1 ELEVATION SCALE</span></div>
       <div className="surface-settings">
-        <label className="field">Analysis location<select aria-label="Surface location" value={state.primary} onChange={e=>state.setAsPrimary(e.target.value)}>{state.sites.map(s=><option key={s.site_id} value={s.site_id}>{s.name}</option>)}</select></label>
+        <label className="field">Analysis location<select aria-label="Surface location" value={state.selected} onChange={e=>state.setAsPrimary(e.target.value)}>{state.sites.map(s=><option key={s.site_id} value={s.site_id}>{s.name}</option>)}</select></label>
         <label className="field">Terrain source<select aria-label="Surface terrain source" value={source} onChange={e=>selectSource(e.target.value)}>{sources.map(s=><option key={s.id} value={s.id}>{s.dataset} · {s.pixel_scale_m} m</option>)}</select></label>
         <label className="field">Displayed region<select aria-label="Terrain crop width" value={width} onChange={e=>setWidth(Number(e.target.value))}>{[1.28,6.4,12.8,25.6].map(w=><option key={w} value={w}>{w} km across</option>)}</select></label>
         <label className="field">Observer mast (m)<input aria-label="Surface observer mast" type="number" min=".5" max="30" step=".5" value={state.mission.mast} onChange={e=>{if(e.target.valueAsNumber>=.5&&e.target.valueAsNumber<=30)state.update('mast',e.target.valueAsNumber);}}/></label>
